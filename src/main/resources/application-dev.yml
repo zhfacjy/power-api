@@ -1,6 +1,12 @@
 server:
   port: 9001
 
+security:
+  jwt:
+    token:
+      secret-key: power#!api@$
+      expire-length: 3600000
+
 spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
@@ -96,3 +102,11 @@ mqtt:
   reconnection-delay: 2000
   reconnection-attempt_max: 6
   keep-alive: 30
+
+# 环境部署
+# 在jmeter/bin 文件夹下面，启动jmeter并且设置jvm内存命令：JVM_ARGS="-Xms1024m -Xmx2048m -XX:NewSize=512m -XX:MaxNewSize=1024m" && export JVM_ARGS &&./jmeter.sh
+# 在docker文件夹下面运行：docker-composes up -d 启动zookeeper 和 kafka
+# 打开集群：启动2个 kafka docker-compose scale kafka=2
+# emq环境：https://juejin.im/post/5ba0c5155188255c9b13ab45
+# docker run --name emq -p 18083:18083 -p 1883:1883 -p 8084:8084 -p 8883:8883 -p 8083:8083 -d registry.cn-hangzhou.aliyuncs.com/synbop/emqttd:2.3.6
+# docker run --rm -ti --name emq -e "EMQ_TCP_PORT=1883" -p 18083:18083 -p 1883:1883 sneck/emqttd:latest

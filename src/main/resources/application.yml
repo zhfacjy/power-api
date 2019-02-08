@@ -4,7 +4,7 @@ spring:
   application:
     name: fucker-api
   profiles:
-    active: dev
+    active: pord
   datasource:
       driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
