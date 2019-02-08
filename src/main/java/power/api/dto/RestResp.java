@@ -14,7 +14,7 @@ public class RestResp {
     public static final Integer OK = 0;
     public static final Integer ERROR = 520;
     public static final Integer NOT_FOUND = 404;
-    public static final Integer PARAM_ERROR= 400;
+    public static final Integer PARAM_ERROR = 400;
     public static final Integer NO_PERMISSION = 1001;
     public static final Integer NO_SESSION = 1002;
     public static final Integer INVISIBLE = 1003;
@@ -27,9 +27,10 @@ public class RestResp {
 
     private Object data;
 
-    public RestResp(){}
-    
-    public RestResp(Integer code, String msg , Object data) {
+    public RestResp() {
+    }
+
+    public RestResp(Integer code, String msg, Object data) {
         this.code = code;
         this.msg = msg;
         this.data = data;
@@ -42,6 +43,14 @@ public class RestResp {
     public RestResp(Integer code, String msg) {
         this.code = code;
         this.msg = msg;
+    }
+
+    public static RestResp createBySuccess(Object data) {
+        return new RestResp(data);
+    }
+
+    public static RestResp createBySuccess() {
+        return new RestResp();
     }
 
 }
