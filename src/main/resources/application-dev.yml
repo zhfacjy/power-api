@@ -57,7 +57,7 @@ spring:
             uppCase: false
   kafka:
     # 指定kafka 代理地址，可以多个
-    bootstrap-servers: 127.0.0.1:32768,127.0.0.1:32769
+    bootstrap-servers: 111.230.151.93:9092
     producer:
       type: async
       request:
@@ -96,7 +96,7 @@ spring:
       concurrency: 3
 # emq连接配置
 mqtt:
-  url: tcp://127.0.0.1:1883
+  url: tcp://111.230.151.93:1883
   clean-start: true
   client-id: receiver
   reconnection-delay: 2000

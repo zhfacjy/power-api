@@ -2,7 +2,7 @@ spring:
   freemarker:
     checkTemplateLocation: false
   application:
-    name: fucker-api
+    name: api
   profiles:
     active: pord
   datasource:
