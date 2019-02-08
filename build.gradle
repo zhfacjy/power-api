@@ -20,6 +20,7 @@ sourceCompatibility = '1.8'
 
 repositories {
 	mavenCentral()
+	jcenter()
 }
 
 dependencies {
@@ -35,6 +36,8 @@ dependencies {
     implementation 'com.alibaba:fastjson:1.2.54'
     implementation 'org.apache.commons:commons-lang3:3.6'
 	implementation 'com.google.guava:guava:27.0.1-jre'
+	implementation "io.springfox:springfox-swagger2:2.9.2"
+	implementation 'io.springfox:springfox-swagger-ui:2.9.2'
 	compileOnly 'org.projectlombok:lombok:1.18.2'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
