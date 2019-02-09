@@ -8,17 +8,12 @@ import springfox.documentation.service.*;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spi.service.contexts.SecurityContext;
 import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger.web.ApiKeyVehicle;
-import springfox.documentation.swagger.web.SecurityConfiguration;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static com.google.common.base.Predicates.or;
 import static java.util.Collections.singletonList;
-import static org.apache.kafka.server.quota.ClientQuotaEntity.ConfigEntityType.CLIENT_ID;
 import static springfox.documentation.builders.PathSelectors.regex;
 
 @Configuration
@@ -39,8 +34,7 @@ public class Swagger2Configuration {
     private SecurityContext securityContext() {
         return SecurityContext.builder()
                 .securityReferences(defaultAuth())
-//                .forPaths(regex("/dictw.*"))  // 使用正则
-                .forPaths(paths()) // 不使用正则
+                .forPaths(paths())
                 .build();
     }
 
