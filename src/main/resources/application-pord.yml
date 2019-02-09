@@ -11,7 +11,7 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     druid:
-      url: jdbc:mysql://111.230.151.93:3306/elqtt
+      url: jdbc:mysql://111.230.151.93:3306/elqtt?characterEncoding=utf-8
       username: kafka
       password: kafka
       # 配置初始化大小、最小、最大
