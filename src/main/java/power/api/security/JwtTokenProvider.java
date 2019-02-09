@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import power.api.exception.CustomException;
+import power.api.model.User;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -43,28 +44,27 @@ public class JwtTokenProvider {
         secretKey = Base64.getEncoder().encodeToString(secretKey.getBytes());
     }
 
-    public String createToken(JSONObject params) {
-
-        Claims claims = Jwts.claims().setSubject(params.getString("mobile"));
-        claims.put("user", params);
-
+    public String createToken(User user) {
+        Claims claims = Jwts.claims().setSubject(user.getUsername());
+        claims.put("user", user);
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
 
-        return Jwts.builder()//
-                .setClaims(claims)//
-                .setIssuedAt(now)//
-                .setExpiration(validity)//
-                .signWith(SignatureAlgorithm.HS256, secretKey)//
+        return Jwts.builder()
+                .setClaims(claims)
+                .setIssuedAt(now)
+                .setExpiration(validity)
+                .signWith(SignatureAlgorithm.HS256, secretKey)
                 .compact();
     }
 
     public Authentication getAuthentication(String token) {
-        UserDetail userDetail = myUserDetails.loadUserByUsername(getMobile(token));
+        String username = getUserName(token);
+        UserDetail userDetail = myUserDetails.loadUserByUsername(username);
         return new UsernamePasswordAuthenticationToken(userDetail, "", userDetail.getAuthorities());
     }
 
-    public String getMobile(String token) {
+    public String getUserName(String token) {
         return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody().getSubject();
     }
 

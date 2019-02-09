@@ -53,4 +53,12 @@ public class RestResp {
         return new RestResp();
     }
 
+    public static RestResp createBy(Integer code, String msg, Object data) {
+        return new RestResp(code, msg, data);
+    }
+
+    public static RestResp createBy(Integer code, String msg) {
+        return new RestResp(code, msg);
+    }
+
 }

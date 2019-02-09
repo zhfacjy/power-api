@@ -18,22 +18,14 @@ public class MyUserDetails implements UserDetailsService {
     private UserRepository userRepository;
 
     @Override
-    public UserDetail loadUserByUsername(String mobile) throws UsernameNotFoundException {
-        final User user = userRepository.findByMobile(mobile);
+    public UserDetail loadUserByUsername(String username) throws UsernameNotFoundException {
+        final User user = userRepository.findByUsername(username);
 
         if (user == null) {
             throw new UsernameNotFoundException("该用户不存在！");
         }
         UserDetail userDetail = new UserDetail(user.getId(), user.getMobile(), user.getUsername());
         return userDetail;
-//                org.springframework.security.core.userdetails.User//
-//                .withUsername(user.getUsername())//
-//                .password(user.getPassword())
-//                .accountExpired(false)//
-//                .accountLocked(false)//
-//                .credentialsExpired(false)//
-//                .disabled(false)//
-//                .build();
     }
 
 }
