@@ -35,4 +35,26 @@ public class MeterRecord extends CommModel implements Serializable {
     private Integer temperature;        // 温度
     private Integer currentLimit;       // 电流上限
     private String crc;
+
+    @Override
+    public String toString() {
+        return "MeterRecord{" +
+                "id=" + id +
+                ", centralNode='" + centralNode + '\'' +
+                ", meter='" + meter + '\'' +
+                ", command='" + command + '\'' +
+                ", earlyWarning='" + earlyWarning + '\'' +
+                ", va=" + va +
+                ", vb=" + vb +
+                ", vc=" + vc +
+                ", ia=" + ia +
+                ", ib=" + ib +
+                ", ic=" + ic +
+                ", power=" + power +
+                ", electricEnergy=" + electricEnergy +
+                ", temperature=" + temperature +
+                ", currentLimit=" + currentLimit +
+                ", crc='" + crc + '\'' +
+                '}';
+    }
 }

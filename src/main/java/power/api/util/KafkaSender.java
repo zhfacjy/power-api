@@ -22,17 +22,9 @@ public class KafkaSender<T> {
     @Autowired
     private KafkaTemplate<String, Object> kafkaTemplate;
 
-    /**
-     * kafka 发送消息
-     *
-     * @param obj 消息对象
-     */
-    public void send(T obj) {
-        String jsonObj = JSON.toJSONString(obj);
-//        logger.info("------------ message = {}", jsonObj);
-
+    public void send(T data) {
         //发送消息
-        ListenableFuture<SendResult<String, Object>> future = kafkaTemplate.send(VariableConfig.KafkaTopic, jsonObj);
+        ListenableFuture<SendResult<String, Object>> future = kafkaTemplate.send(MessageQueueConfig.KAFKA_TOPIC, data);
         future.addCallback(new ListenableFutureCallback<SendResult<String, Object>>() {
             @Override
             public void onFailure(Throwable throwable) {
@@ -42,8 +34,6 @@ public class KafkaSender<T> {
             @Override
             public void onSuccess(SendResult<String, Object> stringObjectSendResult) {
                 //TODO 业务处理
-                // logger.info("kafka消息发送成功:");
-                // logger.info("Produce: _+_+_+_+_+_+_+ result: " + stringObjectSendResult.toString());
             }
         });
     }

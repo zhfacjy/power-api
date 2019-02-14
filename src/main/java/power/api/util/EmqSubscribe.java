@@ -34,8 +34,6 @@ public class EmqSubscribe implements ApplicationRunner {
     @Value("${mqtt.keep-alive}")
     private Short keepAlive;
 
-    private Integer index = 0;
-
 //    private final BloomFilter<String> bloomFilter = BloomFilter.create(new Funnel<String>() {
 //
 //        private static final long serialVersionUID = 1L;
@@ -48,7 +46,7 @@ public class EmqSubscribe implements ApplicationRunner {
 //    }, 1024*1024);
 
     @Autowired
-    private KafkaSender<JSONObject> kafkaSender;
+    private KafkaSender<String> kafkaSender;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -67,7 +65,9 @@ public class EmqSubscribe implements ApplicationRunner {
             mqtt.setKeepAlive(keepAlive);
             //设置客户端id
             mqtt.setClientId(clientId);
-            CallbackConnection connection=mqtt.callbackConnection();
+            mqtt.setUserName(MessageQueueConfig.EMQ_USERNAME);
+            mqtt.setPassword(MessageQueueConfig.EMQ_PASSWORD);
+            CallbackConnection connection = mqtt.callbackConnection();
 
             connection.listener(new Listener() {
                 @Override
@@ -82,15 +82,13 @@ public class EmqSubscribe implements ApplicationRunner {
                 public void onPublish(UTF8Buffer utf8Buffer, Buffer buffer, Runnable ack) {
                     //当有设备向服务已订阅的主题发送消息时,该方法会消费
                     ack.run();
-//                    logger.info("emq消息接收:"+UTF8Buffer.decode(buffer));
-                    JSONObject msg = JSONObject.parseObject("{\"msg\":\""+UTF8Buffer.decode(buffer)+"\"}");
+                    String receiveMessage = UTF8Buffer.decode(buffer);
+                    kafkaSender.send(receiveMessage);
+//                    logger.info("emq消息接收:" + UTF8Buffer.decode(buffer));
 //                    boolean exists = bloomFilter.mightContain(msg.getString("msg"));
 //                    if (!exists) {
-                        kafkaSender.send(msg);
 //                        bloomFilter.put(msg.getString("msg"));
 //                    }
-                    ++index;
-                    logger.info("emqtt接收到的消息数量<<<<<<<<<<<<<<<<<< "+index);
                 }
 
                 @Override
@@ -100,15 +98,15 @@ public class EmqSubscribe implements ApplicationRunner {
             connection.connect(new Callback<Void>() {
                 @Override
                 public void onSuccess(Void aVoid) {
-                   logger.info("地址："+mqUrl+"连接成功");
+                    logger.info("地址：" + mqUrl + "连接成功");
                 }
 
                 @Override
                 public void onFailure(Throwable throwable) {
-                    logger.info("地址："+mqUrl+"连接失败");
+                    logger.info("地址：" + mqUrl + "连接失败");
                 }
             });
-            connection.subscribe(VariableConfig.Topics, new Callback<byte[]>() {
+            connection.subscribe(MessageQueueConfig.Topics, new Callback<byte[]>() {
                 @Override
                 public void onSuccess(byte[] bytes) {
                     logger.info("订阅成功");

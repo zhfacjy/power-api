@@ -65,6 +65,9 @@ public class AuthController {
         registerUser.setUsername(registerParam.getUsername());
         registerUser.setPassword(password);
         userRepository.save(registerUser);
-        return new RestResp();
+
+        registerUser.setPassword(null);
+
+        return RestResp.createBySuccess(registerUser);
     }
 }

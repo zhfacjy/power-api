@@ -12,3 +12,5 @@ spring:
     hibernate:
       ddl-auto: validate
     show-sql: true
+    properties:
+      hibernate.jdbc.batch_size: 10
