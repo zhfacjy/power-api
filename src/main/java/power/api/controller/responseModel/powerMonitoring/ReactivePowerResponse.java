@@ -11,10 +11,10 @@ import java.sql.Timestamp;
  * 在功率中前端只需要时间、ABC相的功率、总功率
  */
 @Data
-public class ActivePowerResponse {
+public class ReactivePowerResponse {
     private Timestamp createAt;
-    private float activePower_a;
-    private float activePower_b;
-    private float activePower_c;
-    private double activePower_total;
+    private float reactivePower_a;
+    private float reactivePower_b;
+    private float reactivePower_c;
+    private double reactivePower_total;
 }

@@ -77,12 +77,12 @@ public class KafkaConsumer {
         meterRecord.setIa(ia);
         meterRecord.setIb(ib);
         meterRecord.setIc(ic);
-        double power = Float.intBitsToFloat(Integer.valueOf(message.substring(32, 40), 16));
+        double activePower = Float.intBitsToFloat(Integer.valueOf(message.substring(32, 40), 16));
         double electricEnergy = Float.intBitsToFloat(Integer.valueOf(message.substring(40, 48), 16));
         int temperature = Integer.parseInt(message.substring(48, 50), 16);
         int currentLimit = Integer.parseInt(message.substring(50, 54), 16);
         String crc = message.substring(54, 58);
-        meterRecord.setPower(power);
+        meterRecord.setActivePower(activePower);
         meterRecord.setElectricEnergy(electricEnergy);
         meterRecord.setTemperature(temperature);
         meterRecord.setCurrentLimit(currentLimit);

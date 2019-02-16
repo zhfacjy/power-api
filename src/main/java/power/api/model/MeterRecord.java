@@ -30,7 +30,11 @@ public class MeterRecord extends CommModel implements Serializable {
     private Float ia;                   // A相电流
     private Float ib;
     private Float ic;
-    private Double power;               // 功率
+    private Float pfa;                    //A相功率因数
+    private Float pfb;
+    private Float pfc;
+    private Float frequency;            //频率
+    private Double activePower;               // 总有功功率
     private Double electricEnergy;      // 电能
     private Integer temperature;        // 温度
     private Integer currentLimit;       // 电流上限
@@ -50,7 +54,10 @@ public class MeterRecord extends CommModel implements Serializable {
                 ", ia=" + ia +
                 ", ib=" + ib +
                 ", ic=" + ic +
-                ", power=" + power +
+                ", pfa=" + pfa+
+                ", pfb=" + pfb +
+                ", pfc=" + pfc +
+                ", power=" + activePower +
                 ", electricEnergy=" + electricEnergy +
                 ", temperature=" + temperature +
                 ", currentLimit=" + currentLimit +

@@ -28,9 +28,37 @@ public class PowerMonitoringController {
             case "active_power":
                 restResp = iMeterRecordService.countActivePowerData(createAt, getElectricDataParam);
                 break;
-            case "electric_current":
-                // TODO 计算电流
+            case "apparent_power":
+                restResp = iMeterRecordService.countApparentPowerData(createAt, getElectricDataParam);
                 break;
+            case "electric_Energy":
+                restResp = iMeterRecordService.countElectricEnergyData(createAt, getElectricDataParam);
+                break;
+            case "temperature":
+                restResp = iMeterRecordService.countTemperatureData(createAt, getElectricDataParam);
+                break;
+            case "phase_current":
+                restResp = iMeterRecordService.countPhaseCurrentData(createAt, getElectricDataParam);
+                break;
+            case "phase_voltage":
+                restResp = iMeterRecordService.countPhaseVoltageData(createAt, getElectricDataParam);
+                break;
+            case "line_voltage":
+                restResp = iMeterRecordService.countLineVoltageData(createAt, getElectricDataParam);
+                break;
+            case "power_factor":
+                restResp = iMeterRecordService.countPowerFactorData(createAt, getElectricDataParam);
+                break;
+            case "reactive_power":
+                restResp = iMeterRecordService.countReactivePowerData(createAt, getElectricDataParam);
+                break;
+            case "frequency":
+                restResp = iMeterRecordService.countFrequencyData(createAt, getElectricDataParam);
+                break;
+            case "degree_of_three_phase_unbalance":
+                restResp = iMeterRecordService.countDegreeOfThreePhaseUnbalanceData(createAt, getElectricDataParam);
+                break;
+
             default:
                 restResp = RestResp.createBy(RestResp.PARAM_ERROR, "参数错误");
         }
