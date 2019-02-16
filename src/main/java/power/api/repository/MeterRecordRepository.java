@@ -11,7 +11,12 @@ import java.util.List;
  * 数据库表meter_record主要记录是电表发来的数据
  */
 public interface MeterRecordRepository extends JpaRepository<MeterRecord, Integer> {
+    /**
+     * Spring Data JPA语法，指定meter_record中的createAt在一个区间范围内的数据
+     *
+     * @param startAt
+     * @param endAt
+     * @return
+     */
     List<MeterRecord> findByCreateAtGreaterThanEqualAndCreateAtLessThanEqual(Timestamp startAt, Timestamp endAt);
-
-    List<MeterRecord> findByCreateAtBetween(Timestamp startAt, Timestamp endAt);
 }
