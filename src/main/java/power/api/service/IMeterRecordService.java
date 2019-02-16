@@ -1,12 +1,7 @@
 package power.api.service;
 
 import power.api.controller.paramModel.GetElectricDataParam;
-import power.api.dto.RestResp;
-import power.api.model.MeterRecord;
-
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.List;
+import power.api.common.RestResp;
 
 /**
  * Created by 浩发 on 2019/2/4 13:46

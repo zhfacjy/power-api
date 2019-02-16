@@ -7,6 +7,9 @@ import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * 数据库表meter_record主要记录是电表发来的数据
+ */
 public interface MeterRecordRepository extends JpaRepository<MeterRecord, Integer> {
     List<MeterRecord> findByCreateAtGreaterThanEqualAndCreateAtLessThanEqual(Timestamp startAt, Timestamp endAt);
 

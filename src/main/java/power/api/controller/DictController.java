@@ -4,9 +4,8 @@ import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import power.api.controller.paramModel.CreateDictParam;
-import power.api.dto.RestResp;
+import power.api.common.RestResp;
 import power.api.service.IDictService;
-import power.api.service.impl.DictService;
 
 // TODO 所有接口的类型检查
 

@@ -1,13 +1,11 @@
 package power.api.controller;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 import power.api.controller.paramModel.LoginParam;
 import power.api.controller.paramModel.RegisterParam;
 import power.api.controller.responseModel.LoginResponse;
-import power.api.dto.RestResp;
+import power.api.common.RestResp;
 import power.api.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import power.api.repository.UserRepository;

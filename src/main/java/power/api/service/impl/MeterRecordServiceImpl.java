@@ -1,14 +1,10 @@
 package power.api.service.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import power.api.controller.paramModel.GetElectricDataParam;
-import power.api.dto.ActivePower;
-import power.api.dto.RestResp;
+import power.api.controller.responseModel.powerMonitoring.ActivePowerResponse;
+import power.api.common.RestResp;
 import power.api.model.MeterRecord;
 import power.api.repository.MeterRecordRepository;
 import power.api.service.IMeterRecordService;
@@ -19,11 +15,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
  * Created by 浩发 on 2019/2/4 13:46
+ * 实现和电表数据有关计算的接口
+ * 如功率、电流等等等，需要使用电表数据的方法都在此类中定义
  */
 @Service
 public class MeterRecordServiceImpl implements IMeterRecordService {
@@ -50,7 +47,7 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
         Timestamp endAt = new Timestamp(end);
 
         List<MeterRecord> meterRecordList = meterRecordRepository.findByCreateAtGreaterThanEqualAndCreateAtLessThanEqual(startAt, endAt);
-        List<ActivePower> activePowerList = new ArrayList<>(meterRecordList.size());
+        List<ActivePowerResponse> activePowerResponseList = new ArrayList<>(meterRecordList.size());
 
         /**
          * factor = power / (ia * va + ib * vb + ic * vc)
@@ -60,33 +57,49 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
          */
 
         for (MeterRecord m : meterRecordList) {
+            // 计算三相功率
             float powerA = m.getIa() * m.getVa();
             float powerB = m.getIb() * m.getVb();
             float powerC = m.getIc() * m.getVc();
+            // 计算功率因数
             float factor = (float) (m.getPower() / (powerA + powerB + powerC));
-            ActivePower activePower = new ActivePower();
-            activePower.setCreateAt(m.getCreateAt());
+
+            // 使用自定义的响应对象，用于前端显示
+            ActivePowerResponse activePowerResponse = new ActivePowerResponse();
+
+            activePowerResponse.setCreateAt(m.getCreateAt());
+
+            // 如果需要显示A相功率，则将数据放入响应对象中
             if (getElectricDataParam.getPhaseA()) {
                 float pa = powerA * factor;
-                activePower.setPa(pa);
+                activePowerResponse.setPa(pa);
             }
+
             if (getElectricDataParam.getPhaseB()) {
                 float pb = powerB * factor;
-                activePower.setPb(pb);
+                activePowerResponse.setPb(pb);
             }
+
             if (getElectricDataParam.getPhaseC() != null && getElectricDataParam.getPhaseC()) {
                 float pc = powerC * factor;
-                activePower.setPc(pc);
+                activePowerResponse.setPc(pc);
             }
+
             if (getElectricDataParam.getTotal()) {
-                activePower.setP(m.getPower());
+                activePowerResponse.setP(m.getPower());
             }
-            activePowerList.add(activePower);
+            activePowerResponseList.add(activePowerResponse);
         }
 
-        return RestResp.createBySuccess(activePowerList);
+        return RestResp.createBySuccess(activePowerResponseList);
     }
 
+    /**
+     * 给定一个时间戳，计算离当天24:00的毫秒数
+     * 如计算22:11和24:00相差的毫秒数
+     * @param currentTimestamp
+     * @return
+     */
     private long getRemainMillisSecondsOneDay(long currentTimestamp) {
         LocalDateTime midnight = LocalDateTime.ofInstant(Instant.ofEpochMilli(currentTimestamp),
                 ZoneId.systemDefault()).plusDays(1).withHour(0).withMinute(0)

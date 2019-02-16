@@ -5,11 +5,8 @@ import io.swagger.annotations.ApiParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import power.api.controller.paramModel.GetElectricDataParam;
-import power.api.dto.RestResp;
+import power.api.common.RestResp;
 import power.api.service.IMeterRecordService;
-
-import java.sql.Timestamp;
-import java.util.Date;
 
 @RestController
 @Api(description = "电力监测")

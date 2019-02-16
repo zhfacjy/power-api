@@ -1,10 +1,10 @@
-package power.api.dto;
+package power.api.common;
 
 import lombok.Data;
 
 /**
  * Created by 浩发 on 2019/02/07.
- * 数据返回
+ * 数据响应均使用此对象封装
  */
 
 @Data

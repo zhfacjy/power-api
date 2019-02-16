@@ -3,7 +3,7 @@ package power.api.service.impl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import power.api.controller.paramModel.CreateDictParam;
-import power.api.dto.RestResp;
+import power.api.common.RestResp;
 import power.api.model.Dict;
 import power.api.repository.DictRepository;
 import power.api.service.IDictService;
