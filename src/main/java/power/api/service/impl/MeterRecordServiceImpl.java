@@ -370,7 +370,6 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
         return RestResp.createBySuccess(degreeOfThreePhaseUnbalanceResponseList);
     }
 
-    float
 
     private long getRemainMillisSecondsOneDay(long currentTimestamp) {
         LocalDateTime midnight = LocalDateTime.ofInstant(Instant.ofEpochMilli(currentTimestamp),
