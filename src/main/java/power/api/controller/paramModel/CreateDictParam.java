@@ -18,7 +18,10 @@ public class CreateDictParam {
             "      3.patrol_group（巡检组别）\n" +
             "      4.patrol_category（巡视类别）\n" +
             "      5.patrol_nature（巡视性质）\n" +
-            "      5.plan_status（巡视执行状态）")
+            "      6.electric_category_single_day（电力类别单日）\n" +
+            "      6.electric_category_range_day（电力类别多日）\n" +
+            "      7.extreme_electric_category（极值电力类别）\n" +
+            "      8.plan_status（巡视执行状态）")
     private String type;
 
     @Override

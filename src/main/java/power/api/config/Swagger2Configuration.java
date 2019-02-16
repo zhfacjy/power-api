@@ -41,7 +41,7 @@ public class Swagger2Configuration {
     private Predicate<String> paths() {
         return or(
                 regex("/dict.*"),
-                regex("/some.*"));
+                regex("/electric.*"));
     }
 
     List<SecurityReference> defaultAuth() {

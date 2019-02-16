@@ -13,6 +13,7 @@ import power.api.repository.DictRepository;
 import power.api.repository.MeterRecordRepository;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,11 +44,12 @@ public class KafkaConsumer {
             // 非58表示结尾
             if (message.length() == 58) {
                 MeterRecord meterRecord = parseMessage(message);
+//                System.out.println(meterRecord);
                 meterRecordList.add(meterRecord);
-                logger.info("缓存条数（未写入）：" + meterRecordList.size());
+//                logger.info("缓存条数（未写入）：" + meterRecordList.size());
             } else if (meterRecordList.size() > 0) {
                 meterRecordRepository.saveAll(meterRecordList);
-                logger.info("写入条数：" + meterRecordList.size());
+//                logger.info("写入条数：" + meterRecordList.size());
                 meterRecordList.clear();
             }
         }
