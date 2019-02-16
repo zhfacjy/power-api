@@ -20,7 +20,8 @@ public class PowerMonitoringController {
     private IMeterRecordService iMeterRecordService;
 
     /**
-     * ElectricData
+     * 电力监测 -> 电力数据 -> 日原始数据 -> 有功功率
+     * http://www.acrelcloud.cn/SubstationWEB/ElectricData
      */
     @PostMapping("/data/{createAt}")
     public RestResp getElectricDataInADay(@ApiParam("日期（时间戳）") @PathVariable long createAt,
