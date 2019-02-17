@@ -60,17 +60,17 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
 /*       PhaseHolder activePowerHolder = new PhaseHolder();
 
         for (MeterRecord m : meterRecordList) {
-            activePowerHolder.phaseA = m.getIa() * m.getVa() * m.getPfa();
-            activePowerHolder.phaseB = m.getIb() * m.getVb() * m.getPfa();
-            activePowerHolder.phaseC= m.getIc() * m.getVc() * m.getPfa();
+            activePowerHolder.setPhaseA( m.getIa() * m.getVa() * m.getPfa());
+            activePowerHolder.setPhaseB(m.getIb() * m.getVb() * m.getPfa()) ;
+            activePowerHolder.setPhaseC(m.getIc() * m.getVc() * m.getPfa());
             ActivePowerResponse activePowerResponse = new ActivePowerResponse();
             activePowerResponse.setCreateAt(m.getCreateAt());
-            activePowerResponse.setActivePowerA(activePowerHolder.phaseA);
+            activePowerResponse.setActivePowerA(activePowerHolder.getPhaseA());
 
-            activePowerResponse.setActivePowerB(activePowerHolder.phaseB);
-            activePowerResponse.setActivePowerC(activePowerHolder.phaseC);
+            activePowerResponse.setActivePowerB(activePowerHolder.getPhaseB());
+            activePowerResponse.setActivePowerC(activePowerHolder.getPhaseC());
 
-            activePowerResponse.setActivePowerTotal(activePowerHolder.phaseA + activePowerHolder.phaseB + activePowerHolder.phaseC);
+            activePowerResponse.setActivePowerTotal(activePowerHolder.getPhaseA() + activePowerHolder.getPhaseB() + activePowerHolder.getPhaseC());
             activePowerResponsesList.add(activePowerResponse);
         }*/
 
@@ -104,17 +104,17 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
          */
         PhaseHolder apparentPowerHolder = new PhaseHolder();
         for (MeterRecord m : meterRecordList) {
-            apparentPowerHolder.phaseA = m.getIa() * m.getVa();
-            apparentPowerHolder.phaseB = m.getIb() * m.getVb();
-            apparentPowerHolder.phaseC = m.getIc() * m.getVc();
+            apparentPowerHolder.setPhaseA( m.getIa() * m.getVa());
+            apparentPowerHolder.setPhaseB(m.getIb() * m.getVb());
+            apparentPowerHolder.setPhaseC(m.getIc() * m.getVc());
 
             ApparentPowerResponse apparentPowerResponse = new ApparentPowerResponse();
 
             apparentPowerResponse.setCreateAt(m.getCreateAt());
-            apparentPowerResponse.setApparentPowerA(apparentPowerHolder.phaseA);
-            apparentPowerResponse.setApparentPowerB(apparentPowerHolder.phaseB);
-            apparentPowerResponse.setApparentPowerC(apparentPowerHolder.phaseC);
-            apparentPowerResponse.setApparentPowerC(apparentPowerHolder.phaseA + apparentPowerHolder.phaseB + apparentPowerHolder.phaseC);
+            apparentPowerResponse.setApparentPowerA(apparentPowerHolder.getPhaseA());
+            apparentPowerResponse.setApparentPowerB(apparentPowerHolder.getPhaseB());
+            apparentPowerResponse.setApparentPowerC(apparentPowerHolder.getPhaseC());
+            apparentPowerResponse.setApparentPowerTotal(apparentPowerHolder.getPhaseA() + apparentPowerHolder.getPhaseB() + apparentPowerHolder.getPhaseC());
 
             apparentPowerResponsesList.add(apparentPowerResponse);
         }
@@ -235,25 +235,25 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
         LineVoltageHolder lineVoltageHolder = new LineVoltageHolder();
 
         for (MeterRecord m : meterRecordList) {
-            lineVoltageHolder.Uab = (float) (Math.sqrt(Math.pow(m.getVa(), 2)
+            lineVoltageHolder.setUab((float) (Math.sqrt(Math.pow(m.getVa(), 2)
                     + Math.pow(m.getVb(), 2)
-                    - 2 * m.getVa() * m.getVb() * Math.cos(Math.PI * 2 / 3)));
+                    - 2 * m.getVa() * m.getVb() * Math.cos(Math.PI * 2 / 3))));
 
-            lineVoltageHolder.Ubc = (float) (Math.sqrt(Math.pow(m.getVb(), 2)
+            lineVoltageHolder.setUbc((float) (Math.sqrt(Math.pow(m.getVb(), 2)
                     + Math.pow(m.getVc(), 2)
-                    - 2 * m.getVb() * m.getVc() * Math.cos(Math.PI * 2 / 3)));
+                    - 2 * m.getVb() * m.getVc() * Math.cos(Math.PI * 2 / 3)))) ;
 
-            lineVoltageHolder.Uca = (float) (Math.sqrt(Math.pow(m.getVc(), 2)
+            lineVoltageHolder.setUca((float) (Math.sqrt(Math.pow(m.getVc(), 2)
                     + Math.pow(m.getVa(), 2)
-                    - 2 * m.getVc() * m.getVa() * Math.cos(Math.PI * 2 / 3)));
+                    - 2 * m.getVc() * m.getVa() * Math.cos(Math.PI * 2 / 3))));
 
 
             LineVoltageResponse lineVoltageResponse = new LineVoltageResponse();
 
             lineVoltageResponse.setCreateAt(m.getCreateAt());
-            lineVoltageResponse.setUab(lineVoltageHolder.Uab);
-            lineVoltageResponse.setUbc(lineVoltageHolder.Ubc);
-            lineVoltageResponse.setUca(lineVoltageHolder.Uca);
+            lineVoltageResponse.setUab(lineVoltageHolder.getUab());
+            lineVoltageResponse.setUbc(lineVoltageHolder.getUbc());
+            lineVoltageResponse.setUca(lineVoltageHolder.getUca());
             lineVoltageResponseList.add(lineVoltageResponse);
         }
 
@@ -314,16 +314,16 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
 /*        PhaseHolder reactivePowerResponseHolder = new PhaseHolder();
 
         for (MeterRecord m : meterRecordList) {
-            reactivePowerResponseHolder.phase_a = m.getVa() * m.getIa() * (float) (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getPfa()))));
-            reactivePowerResponseHolder.phase_b = m.getVb() * m.getIb() * (float) (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getPfb()))));
-            reactivePowerResponseHolder.phase_c = m.getVc() * m.getIc() * (float) (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getPfc()))));
+            reactivePowerResponseHolder.setPhaseA(m.getVa() * m.getIa() * (float) (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getPfa())))));
+            reactivePowerResponseHolder.setPhaseB(m.getVb() * m.getIb() * (float) (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getPfb())))));
+            reactivePowerResponseHolder.setPhaseC(m.getVc() * m.getIc() * (float) (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getPfc())))));
             ReactivePowerResponse reactivePowerResponse = new ReactivePowerResponse();
 
             reactivePowerResponse.setCreateAt(m.getCreateAt());
-            reactivePowerResponse.setReactivePower_a(reactivePowerResponseHolder.phase_a);
-            reactivePowerResponse.setReactivePower_b(reactivePowerResponseHolder.phase_b);
-            reactivePowerResponse.setReactivePower_c(reactivePowerResponseHolder.phase_c);
-            reactivePowerResponse.setReactivePower_total(reactivePowerResponseHolder.phase_a + reactivePowerResponseHolder.phase_b + reactivePowerResponseHolder.phase_c);
+            reactivePowerResponse.setReactivePowerA(reactivePowerResponseHolder.getPhaseA());
+            reactivePowerResponse.setReactivePowerB(reactivePowerResponseHolder.getPhaseB());
+            reactivePowerResponse.setReactivePowerC(reactivePowerResponseHolder.getPhaseC());
+            reactivePowerResponse.setReactivePowerTotal(reactivePowerResponseHolder.getPhaseA() + reactivePowerResponseHolder.getPhaseB()+ reactivePowerResponseHolder.getPhaseC());
             reactivePowerResponseList.add(reactivePowerResponse);
         }*/
 

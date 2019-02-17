@@ -18,4 +18,6 @@ public class DegreeOfThreePhaseUnbalanceResponse {
     private float UUnB; //电压
 
 
+    public DegreeOfThreePhaseUnbalanceResponse() {
+    }
 }
