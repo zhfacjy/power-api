@@ -104,7 +104,7 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
          */
         PhaseHolder apparentPowerHolder = new PhaseHolder();
         for (MeterRecord m : meterRecordList) {
-            apparentPowerHolder.setPhaseA( m.getIa() * m.getVa());
+            apparentPowerHolder.setPhaseA(m.getIa() * m.getVa());
             apparentPowerHolder.setPhaseB(m.getIb() * m.getVb());
             apparentPowerHolder.setPhaseC(m.getIc() * m.getVc());
 
@@ -241,7 +241,7 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
 
             lineVoltageHolder.setUbc((float) (Math.sqrt(Math.pow(m.getVb(), 2)
                     + Math.pow(m.getVc(), 2)
-                    - 2 * m.getVb() * m.getVc() * Math.cos(Math.PI * 2 / 3)))) ;
+                    - 2 * m.getVb() * m.getVc() * Math.cos(Math.PI * 2 / 3))));
 
             lineVoltageHolder.setUca((float) (Math.sqrt(Math.pow(m.getVc(), 2)
                     + Math.pow(m.getVa(), 2)
@@ -297,14 +297,14 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
         List<MeterRecord> meterRecordList = getMeterRecordList(startAt, endAt);
         List<ReactivePowerResponse> reactivePowerResponseList = new ArrayList<>(meterRecordList.size());
 
-        float apparentPower_total;
+        float apparentPowerTotal;
 
         for (MeterRecord m : meterRecordList) {
             ReactivePowerResponse reactivePowerResponse = new ReactivePowerResponse();
 
-            apparentPower_total = (m.getVa() + m.getVb() + m.getVc()) * (m.getIa() + m.getIb() + m.getIc());
+            apparentPowerTotal = (m.getVa() + m.getVb() + m.getVc()) * (m.getIa() + m.getIb() + m.getIc());
 
-            reactivePowerResponse.setReactivePowerTotal(apparentPower_total * (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getActivePower() / apparentPower_total)))));
+            reactivePowerResponse.setReactivePowerTotal(apparentPowerTotal * (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getActivePower() / apparentPowerTotal)))));
 
 
         }
@@ -365,17 +365,17 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
 
         DegreeOfThreePhaseUnbalanceHolder degreeOfThreePhaseUnbalanceHolder = new DegreeOfThreePhaseUnbalanceHolder();
 
-        float voltage_total;
-        float current_total;
+        float voltageTotal;
+        float currentTotal;
 
         for (MeterRecord m : meterRecordList) {
             DegreeOfThreePhaseUnbalanceResponse degreeOfThreePhaseUnbalanceResponse = new DegreeOfThreePhaseUnbalanceResponse();
             degreeOfThreePhaseUnbalanceResponse.setCreateAt(m.getCreateAt());
-            voltage_total = m.getVa() + m.getVb() + m.getVc();
-            degreeOfThreePhaseUnbalanceHolder.UUnb = (Math.max(Math.max(m.getVa(), m.getVb()), m.getVc()) - voltage_total) / voltage_total;
+            voltageTotal = m.getVa() + m.getVb() + m.getVc();
+            degreeOfThreePhaseUnbalanceHolder.UUnb = (Math.max(Math.max(m.getVa(), m.getVb()), m.getVc()) - voltageTotal) / voltageTotal;
 
-            current_total = m.getIa() + m.getIb() + m.getIc();
-            degreeOfThreePhaseUnbalanceHolder.IUnb = (Math.max(Math.max(m.getIa(), m.getIb()), m.getIc()) - current_total) / current_total;
+            currentTotal = m.getIa() + m.getIb() + m.getIc();
+            degreeOfThreePhaseUnbalanceHolder.IUnb = (Math.max(Math.max(m.getIa(), m.getIb()), m.getIc()) - currentTotal) / currentTotal;
 
 
             degreeOfThreePhaseUnbalanceResponse.setUUnB(degreeOfThreePhaseUnbalanceHolder.UUnb);
@@ -388,7 +388,12 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
 
     @Override
     public RestResp countActivePowerMaxAvgMin(long startAt, long endAt) {
+        /**
+         * 结束日期为当天的最后一刻，即前端的参数可能为2019-02-17 10:00:00
+         * 需要修正为2019-02-17 23:59:59，所以需要增加毫秒数
+         */
         endAt = endAt + this.getRemainMillisSecondsOneDay(endAt);
+
         Timestamp start = new Timestamp(startAt);
         Timestamp end = new Timestamp(endAt);
         List<MaxAvgMinDto> maxAvgMinDtoList = meterRecordRepository.findMaxAvgMinByPower(start, end);

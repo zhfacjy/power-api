@@ -23,7 +23,13 @@ public interface MeterRecordRepository extends JpaRepository<MeterRecord, Intege
     List<MeterRecord> findByCreateAtGreaterThanEqualAndCreateAtLessThanEqual(Timestamp startAt, Timestamp endAt);
 
     /**
-     * 计算直嘀咕
+     * 计算有功功率的最大值、平均值、最小值
+     *     按照日期分组
+     *     条件为日期区间
+     *
+     *  function是使用MySql中名为date_format的内置函数，用于格式化日期
+     *
+     *  MaxAvgMinDto用于装载查询结果，构造函数一一对应
      *
      * @param startAt
      * @param endAt
