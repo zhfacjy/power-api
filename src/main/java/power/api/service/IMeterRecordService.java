@@ -50,4 +50,6 @@ public interface IMeterRecordService {
     RestResp countDegreeOfThreePhaseUnbalanceData(long createAt, GetElectricDataParam getElectricDataParam);
 
     RestResp countDegreeOfThreePhaseUnbalanceDataRange(long startAt, long endAt, GetElectricDataParam getElectricDataParam);
+
+    RestResp countActivePowerMaxAvgMin(long startAt, long endAt);
 }

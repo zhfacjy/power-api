@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import power.api.common.RestResp;
 import power.api.controller.paramModel.GetElectricDataParam;
 import power.api.controller.responseModel.powerMonitoring.*;
+import power.api.dto.MaxAvgMinDto;
 import power.api.model.MeterRecord;
 import power.api.repository.MeterRecordRepository;
 import power.api.service.IMeterRecordService;
@@ -34,6 +35,7 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
 
     @Autowired
     private MeterRecordRepository meterRecordRepository;
+
 
     @Override
     public RestResp countActivePowerData(long createAt, GetElectricDataParam getElectricDataParam) {
@@ -300,7 +302,7 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
         for (MeterRecord m : meterRecordList) {
             ReactivePowerResponse reactivePowerResponse = new ReactivePowerResponse();
 
-            apparentPower_total = (m.getVa() + m.getVb() + m.getVc()) * ( m.getIa() + m.getIb() + m.getIc());
+            apparentPower_total = (m.getVa() + m.getVb() + m.getVc()) * (m.getIa() + m.getIb() + m.getIc());
 
             reactivePowerResponse.setReactivePowerTotal(apparentPower_total * (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getActivePower() / apparentPower_total)))));
 
@@ -382,6 +384,15 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
 
         }
         return RestResp.createBySuccess(degreeOfThreePhaseUnbalanceResponseList);
+    }
+
+    @Override
+    public RestResp countActivePowerMaxAvgMin(long startAt, long endAt) {
+        endAt = endAt + this.getRemainMillisSecondsOneDay(endAt);
+        Timestamp start = new Timestamp(startAt);
+        Timestamp end = new Timestamp(endAt);
+        List<MaxAvgMinDto> maxAvgMinDtoList = meterRecordRepository.findMaxAvgMinByPower(start, end);
+        return RestResp.createBySuccess(maxAvgMinDtoList);
     }
 
 

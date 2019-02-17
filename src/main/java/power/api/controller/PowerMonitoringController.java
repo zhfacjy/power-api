@@ -58,7 +58,6 @@ public class PowerMonitoringController {
             case "degree_of_three_phase_unbalance":
                 restResp = iMeterRecordService.countDegreeOfThreePhaseUnbalanceData(createAt, getElectricDataParam);
                 break;
-
             default:
                 restResp = RestResp.createBy(RestResp.PARAM_ERROR, "参数错误");
         }
@@ -66,9 +65,17 @@ public class PowerMonitoringController {
     }
 
     @PostMapping("/data/{startAt}/{endAt}")
-    public RestResp getElectricDataInRangeDay(@ApiParam("起始日期（时间戳）") @PathVariable Long startAt,
-                                              @ApiParam("结束日期（时间戳）") @PathVariable Long endAt,
-                                              @RequestBody GetElectricDataParam getElectricDataParam) {
-        return RestResp.createBySuccess();
+    public RestResp getMaxAvgMinElectricData(@ApiParam("起始日期（时间戳）") @PathVariable Long startAt,
+                                             @ApiParam("结束日期（时间戳）") @PathVariable Long endAt,
+                                             @RequestBody GetElectricDataParam getElectricDataParam) {
+        RestResp restResp = null;
+        switch (getElectricDataParam.getElectricType()) {
+            case "active_power":
+                restResp = iMeterRecordService.countActivePowerMaxAvgMin(startAt, endAt);
+                break;
+            default:
+                restResp = RestResp.createBy(RestResp.PARAM_ERROR, "参数错误");
+        }
+        return restResp;
     }
 }
