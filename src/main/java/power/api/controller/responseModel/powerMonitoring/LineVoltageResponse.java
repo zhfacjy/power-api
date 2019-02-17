@@ -7,9 +7,9 @@ import java.sql.Timestamp;
 @Data
 public class LineVoltageResponse {
     private Timestamp createAt;
-    private float lineVoltage_ab;
-    private float lineVoltage_bc;
-    private float lineVoltage_ca;
+    private float Uab;
+    private float Ubc;
+    private float Uca;
 
     public LineVoltageResponse() {
     }

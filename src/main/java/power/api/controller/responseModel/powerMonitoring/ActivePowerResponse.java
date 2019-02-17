@@ -13,8 +13,8 @@ import java.sql.Timestamp;
 @Data
 public class ActivePowerResponse {
     private Timestamp createAt;
-    private float activePower_a;
-    private float activePower_b;
-    private float activePower_c;
-    private double activePower_total;
+    private float activePowerA;
+    private float activePowerB;
+    private float activePowerC;
+    private double activePowerTotal;
 }

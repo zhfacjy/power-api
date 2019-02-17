@@ -48,7 +48,7 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
         for (MeterRecord m : meterRecordList) {
             ActivePowerResponse activePowerResponse = new ActivePowerResponse();
             activePowerResponse.setCreateAt(m.getCreateAt());
-            activePowerResponse.setActivePower_total(m.getActivePower());
+            activePowerResponse.setActivePowerTotal(m.getActivePower());
             activePowerResponsesList.add(activePowerResponse);
 
         }
@@ -58,17 +58,17 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
 /*       PhaseHolder activePowerHolder = new PhaseHolder();
 
         for (MeterRecord m : meterRecordList) {
-            activePowerHolder.phase_a = m.getIa() * m.getVa() * m.getPfa();
-            activePowerHolder.phase_b = m.getIb() * m.getVb() * m.getPfa();
-            activePowerHolder.phase_c= m.getIc() * m.getVc() * m.getPfa();
+            activePowerHolder.phaseA = m.getIa() * m.getVa() * m.getPfa();
+            activePowerHolder.phaseB = m.getIb() * m.getVb() * m.getPfa();
+            activePowerHolder.phaseC= m.getIc() * m.getVc() * m.getPfa();
             ActivePowerResponse activePowerResponse = new ActivePowerResponse();
             activePowerResponse.setCreateAt(m.getCreateAt());
-            activePowerResponse.setActivePower_a(activePowerHolder.phase_a);
+            activePowerResponse.setActivePowerA(activePowerHolder.phaseA);
 
-            activePowerResponse.setActivePower_b(activePowerHolder.phase_b);
-            activePowerResponse.setActivePower_c(activePowerHolder.phase_c);
+            activePowerResponse.setActivePowerB(activePowerHolder.phaseB);
+            activePowerResponse.setActivePowerC(activePowerHolder.phaseC);
 
-            activePowerResponse.setActivePower_total(activePowerHolder.phase_a + activePowerHolder.phase_b + activePowerHolder.phase_c);
+            activePowerResponse.setActivePowerTotal(activePowerHolder.phaseA + activePowerHolder.phaseB + activePowerHolder.phaseC);
             activePowerResponsesList.add(activePowerResponse);
         }*/
 
@@ -102,17 +102,17 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
          */
         PhaseHolder apparentPowerHolder = new PhaseHolder();
         for (MeterRecord m : meterRecordList) {
-            apparentPowerHolder.phase_a = m.getIa() * m.getVa();
-            apparentPowerHolder.phase_b = m.getIb() * m.getVb();
-            apparentPowerHolder.phase_c = m.getIc() * m.getVc();
+            apparentPowerHolder.phaseA = m.getIa() * m.getVa();
+            apparentPowerHolder.phaseB = m.getIb() * m.getVb();
+            apparentPowerHolder.phaseC = m.getIc() * m.getVc();
 
             ApparentPowerResponse apparentPowerResponse = new ApparentPowerResponse();
 
             apparentPowerResponse.setCreateAt(m.getCreateAt());
-            apparentPowerResponse.setApparentPower_a(apparentPowerHolder.phase_a);
-            apparentPowerResponse.setApparentPower_b(apparentPowerHolder.phase_b);
-            apparentPowerResponse.setApparentPower_c(apparentPowerHolder.phase_c);
-            apparentPowerResponse.setApparentPower_total(apparentPowerHolder.phase_a + apparentPowerHolder.phase_b + apparentPowerHolder.phase_c);
+            apparentPowerResponse.setApparentPowerA(apparentPowerHolder.phaseA);
+            apparentPowerResponse.setApparentPowerB(apparentPowerHolder.phaseB);
+            apparentPowerResponse.setApparentPowerC(apparentPowerHolder.phaseC);
+            apparentPowerResponse.setApparentPowerC(apparentPowerHolder.phaseA + apparentPowerHolder.phaseB + apparentPowerHolder.phaseC);
 
             apparentPowerResponsesList.add(apparentPowerResponse);
         }
@@ -185,9 +185,9 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
             PhaseCurrentResponse phaseCurrentResponse = new PhaseCurrentResponse();
 
             phaseCurrentResponse.setCreateAt(m.getCreateAt());
-            phaseCurrentResponse.setPhaseCurrent_a(m.getIa());
-            phaseCurrentResponse.setPhaseCurrent_b(m.getIb());
-            phaseCurrentResponse.setPhaseCurrent_c(m.getIc());
+            phaseCurrentResponse.setPhaseCurrentA(m.getIa());
+            phaseCurrentResponse.setPhaseCurrentB(m.getIb());
+            phaseCurrentResponse.setPhaseCurrentC(m.getIc());
             phaseCurrentResponseList.add(phaseCurrentResponse);
         }
 
@@ -210,9 +210,9 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
             PhaseVoltageResponse phaseVoltageResponse = new PhaseVoltageResponse();
 
             phaseVoltageResponse.setCreateAt(m.getCreateAt());
-            phaseVoltageResponse.setPhaseVoltage_a(m.getVa());
-            phaseVoltageResponse.setPhaseVoltage_b(m.getVb());
-            phaseVoltageResponse.setPhaseVoltage_c(m.getVc());
+            phaseVoltageResponse.setPhaseVoltageA(m.getVa());
+            phaseVoltageResponse.setPhaseVoltageB(m.getVb());
+            phaseVoltageResponse.setPhaseVoltageC(m.getVc());
             phaseVoltageResponseList.add(phaseVoltageResponse);
         }
 
@@ -249,9 +249,9 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
             LineVoltageResponse lineVoltageResponse = new LineVoltageResponse();
 
             lineVoltageResponse.setCreateAt(m.getCreateAt());
-            lineVoltageResponse.setLineVoltage_ab(lineVoltageHolder.Uab);
-            lineVoltageResponse.setLineVoltage_bc(lineVoltageHolder.Ubc);
-            lineVoltageResponse.setLineVoltage_ca(lineVoltageHolder.Uca);
+            lineVoltageResponse.setUab(lineVoltageHolder.Uab);
+            lineVoltageResponse.setUbc(lineVoltageHolder.Ubc);
+            lineVoltageResponse.setUca(lineVoltageHolder.Uca);
             lineVoltageResponseList.add(lineVoltageResponse);
         }
 
@@ -274,10 +274,10 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
             PowerFactorResponse powerFactorResponse = new PowerFactorResponse();
 
             powerFactorResponse.setCreateAt(m.getCreateAt());
-            powerFactorResponse.setPowerFactor_a(m.getPfa());
-            powerFactorResponse.setPowerFactor_b(m.getPfb());
-            powerFactorResponse.setPowerFactor_c(m.getPfc());
-            powerFactorResponse.setPowerFactor_total(m.getPfa() + m.getPfb() + m.getPfc());
+            powerFactorResponse.setPowerFactorA(m.getPfa());
+            powerFactorResponse.setPowerFactorB(m.getPfb());
+            powerFactorResponse.setPowerFactorC(m.getPfc());
+            powerFactorResponse.setPowerFactorTotal(m.getPfa() + m.getPfb() + m.getPfc());
             powerFactorResponseList.add(powerFactorResponse);
         }
 
@@ -302,7 +302,7 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
 
             apparentPower_total = (m.getVa() + m.getVb() + m.getVc()) * ( m.getIa() + m.getIb() + m.getIc());
 
-            reactivePowerResponse.setReactivePower_total(apparentPower_total * (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getActivePower() / apparentPower_total)))));
+            reactivePowerResponse.setReactivePowerTotal(apparentPower_total * (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getActivePower() / apparentPower_total)))));
 
 
         }

@@ -7,9 +7,9 @@ import java.sql.Timestamp;
 @Data
 public class PhaseVoltageResponse {
     private Timestamp createAt;
-    private float phaseVoltage_a;
-    private float phaseVoltage_b;
-    private float phaseVoltage_c;
+    private float phaseVoltageA;
+    private float phaseVoltageB;
+    private float phaseVoltageC;
 
     public PhaseVoltageResponse() {
     }
