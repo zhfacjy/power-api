@@ -14,4 +14,7 @@ import java.sql.Timestamp;
 public class FrequencyResponse {
     private Timestamp createAt;
     private float frequency;
+
+    public FrequencyResponse() {
+    }
 }

@@ -7,9 +7,9 @@ import java.sql.Timestamp;
 @Data
 public class PhaseCurrentResponse {
     private Timestamp createAt;
-    private double phaseCurrentA;
-    private double phaseCurrentB;
-    private double phaseCurrentC;
+    private float phaseCurrentA;
+    private float phaseCurrentB;
+    private float phaseCurrentC;
 
     public PhaseCurrentResponse() {
     }

@@ -17,4 +17,7 @@ public class ApparentPowerResponse {
     private float apparentPowerB;
     private float apparentPowerC;
     private double apparentPowerTotal;
+
+    public ApparentPowerResponse() {
+    }
 }

@@ -17,4 +17,7 @@ public class ReactivePowerResponse {
     private float reactivePowerB;
     private float reactivePowerC;
     private double reactivePowerTotal;
+
+    public ReactivePowerResponse() {
+    }
 }
