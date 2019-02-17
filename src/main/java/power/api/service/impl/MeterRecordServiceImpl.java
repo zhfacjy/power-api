@@ -309,7 +309,7 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
 
 
         //以下注释不要删，以后要用的
-        PhaseHolder reactivePowerResponseHolder = new PhaseHolder();
+/*        PhaseHolder reactivePowerResponseHolder = new PhaseHolder();
 
         for (MeterRecord m : meterRecordList) {
             reactivePowerResponseHolder.setPhaseA(m.getVa() * m.getIa() * (float) (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getPfa())))));
@@ -323,7 +323,7 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
             reactivePowerResponse.setReactivePowerC(reactivePowerResponseHolder.getPhaseC());
             reactivePowerResponse.setReactivePowerTotal(reactivePowerResponseHolder.getPhaseA() + reactivePowerResponseHolder.getPhaseB()+ reactivePowerResponseHolder.getPhaseC());
             reactivePowerResponseList.add(reactivePowerResponse);
-        }
+        }*/
 
         return RestResp.createBySuccess(reactivePowerResponseList);
     }
