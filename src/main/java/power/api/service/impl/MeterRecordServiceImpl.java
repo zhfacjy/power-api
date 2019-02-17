@@ -13,6 +13,9 @@ import power.api.controller.responseModel.powerMonitoring.*;
 import power.api.model.MeterRecord;
 import power.api.repository.MeterRecordRepository;
 import power.api.service.IMeterRecordService;
+import power.api.service.impl.DataWrapperClassHolder.DegreeOfThreePhaseUnbalanceHolder;
+import power.api.service.impl.DataWrapperClassHolder.LineVoltageHolder;
+import power.api.service.impl.DataWrapperClassHolder.PhaseHolder;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -227,20 +230,18 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
         List<MeterRecord> meterRecordList = getMeterRecordList(startAt, endAt);
         List<LineVoltageResponse> lineVoltageResponseList = new ArrayList<>(meterRecordList.size());
 
-        float Uab;
-        float Ubc;
-        float Uca;
+        LineVoltageHolder lineVoltageHolder = new LineVoltageHolder();
 
         for (MeterRecord m : meterRecordList) {
-            Uab = (float) (Math.sqrt(Math.pow(m.getVa(), 2)
+            lineVoltageHolder.Uab = (float) (Math.sqrt(Math.pow(m.getVa(), 2)
                     + Math.pow(m.getVb(), 2)
                     - 2 * m.getVa() * m.getVb() * Math.cos(Math.PI * 2 / 3)));
 
-            Ubc = (float) (Math.sqrt(Math.pow(m.getVb(), 2)
+            lineVoltageHolder.Ubc = (float) (Math.sqrt(Math.pow(m.getVb(), 2)
                     + Math.pow(m.getVc(), 2)
                     - 2 * m.getVb() * m.getVc() * Math.cos(Math.PI * 2 / 3)));
 
-            Uca = (float) (Math.sqrt(Math.pow(m.getVc(), 2)
+            lineVoltageHolder.Uca = (float) (Math.sqrt(Math.pow(m.getVc(), 2)
                     + Math.pow(m.getVa(), 2)
                     - 2 * m.getVc() * m.getVa() * Math.cos(Math.PI * 2 / 3)));
 
@@ -248,9 +249,9 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
             LineVoltageResponse lineVoltageResponse = new LineVoltageResponse();
 
             lineVoltageResponse.setCreateAt(m.getCreateAt());
-            lineVoltageResponse.setLineVoltage_ab(Uab);
-            lineVoltageResponse.setLineVoltage_bc(Ubc);
-            lineVoltageResponse.setLineVoltage_ca(Uca);
+            lineVoltageResponse.setLineVoltage_ab(lineVoltageHolder.Uab);
+            lineVoltageResponse.setLineVoltage_bc(lineVoltageHolder.Ubc);
+            lineVoltageResponse.setLineVoltage_ca(lineVoltageHolder.Uca);
             lineVoltageResponseList.add(lineVoltageResponse);
         }
 
@@ -294,7 +295,21 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
         List<MeterRecord> meterRecordList = getMeterRecordList(startAt, endAt);
         List<ReactivePowerResponse> reactivePowerResponseList = new ArrayList<>(meterRecordList.size());
 
-        PhaseHolder reactivePowerResponseHolder = new PhaseHolder();
+        float apparentPower_total;
+
+        for (MeterRecord m : meterRecordList) {
+            ReactivePowerResponse reactivePowerResponse = new ReactivePowerResponse();
+
+            apparentPower_total = (m.getVa() + m.getVb() + m.getVc()) * ( m.getIa() + m.getIb() + m.getIc());
+
+            reactivePowerResponse.setReactivePower_total(apparentPower_total * (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getActivePower() / apparentPower_total)))));
+
+
+        }
+
+
+        //以下注释不要删，以后要用的
+/*        PhaseHolder reactivePowerResponseHolder = new PhaseHolder();
 
         for (MeterRecord m : meterRecordList) {
             reactivePowerResponseHolder.phase_a = m.getVa() * m.getIa() * (float) (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getPfa()))));
@@ -308,7 +323,7 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
             reactivePowerResponse.setReactivePower_c(reactivePowerResponseHolder.phase_c);
             reactivePowerResponse.setReactivePower_total(reactivePowerResponseHolder.phase_a + reactivePowerResponseHolder.phase_b + reactivePowerResponseHolder.phase_c);
             reactivePowerResponseList.add(reactivePowerResponse);
-        }
+        }*/
 
         return RestResp.createBySuccess(reactivePowerResponseList);
     }
@@ -346,24 +361,23 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
         List<MeterRecord> meterRecordList = getMeterRecordList(startAt, endAt);
         List<DegreeOfThreePhaseUnbalanceResponse> degreeOfThreePhaseUnbalanceResponseList = new ArrayList<>(meterRecordList.size());
 
+        DegreeOfThreePhaseUnbalanceHolder degreeOfThreePhaseUnbalanceHolder = new DegreeOfThreePhaseUnbalanceHolder();
 
-        float voltage_total=0f;
-        float DegreeOfThreePhaseUnbalance_voltage;
+        float voltage_total;
         float current_total;
-        float DegreeOfThreePhaseUnbalance_current;
 
         for (MeterRecord m : meterRecordList) {
             DegreeOfThreePhaseUnbalanceResponse degreeOfThreePhaseUnbalanceResponse = new DegreeOfThreePhaseUnbalanceResponse();
             degreeOfThreePhaseUnbalanceResponse.setCreateAt(m.getCreateAt());
             voltage_total = m.getVa() + m.getVb() + m.getVc();
-            DegreeOfThreePhaseUnbalance_voltage = (Math.max(Math.max(m.getVa(), m.getVb()), m.getVc()) - voltage_total) / voltage_total;
+            degreeOfThreePhaseUnbalanceHolder.UUnb = (Math.max(Math.max(m.getVa(), m.getVb()), m.getVc()) - voltage_total) / voltage_total;
 
             current_total = m.getIa() + m.getIb() + m.getIc();
-            DegreeOfThreePhaseUnbalance_current = (Math.max(Math.max(m.getIa(), m.getIb()), m.getIc()) - current_total) / current_total;
+            degreeOfThreePhaseUnbalanceHolder.IUnb = (Math.max(Math.max(m.getIa(), m.getIb()), m.getIc()) - current_total) / current_total;
 
 
-            degreeOfThreePhaseUnbalanceResponse.setDegreeOfThreePhaseUnbalance_voltage(DegreeOfThreePhaseUnbalance_voltage);
-            degreeOfThreePhaseUnbalanceResponse.setDegreeOfThreePhaseUnbalance_voltage(DegreeOfThreePhaseUnbalance_current);
+            degreeOfThreePhaseUnbalanceResponse.setUUnB(degreeOfThreePhaseUnbalanceHolder.UUnb);
+            degreeOfThreePhaseUnbalanceResponse.setIUnB(degreeOfThreePhaseUnbalanceHolder.IUnb);
             degreeOfThreePhaseUnbalanceResponseList.add(degreeOfThreePhaseUnbalanceResponse);
 
         }
@@ -385,8 +399,5 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
 
     }
 
-    class PhaseHolder {
-        float phase_a, phase_b, phase_c;
 
-    }
 }

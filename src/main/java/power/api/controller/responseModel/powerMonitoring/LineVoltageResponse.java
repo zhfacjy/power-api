@@ -10,7 +10,6 @@ public class LineVoltageResponse {
     private float lineVoltage_ab;
     private float lineVoltage_bc;
     private float lineVoltage_ca;
-    private double lineVoltage_total;
 
     public LineVoltageResponse() {
     }

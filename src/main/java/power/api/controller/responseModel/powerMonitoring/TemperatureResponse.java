@@ -7,7 +7,7 @@ import java.sql.Timestamp;
 @Data
 public class TemperatureResponse {
     private Timestamp createAt;
-    private double Temperature;
+    private float Temperature;
 
     public TemperatureResponse() {
     }

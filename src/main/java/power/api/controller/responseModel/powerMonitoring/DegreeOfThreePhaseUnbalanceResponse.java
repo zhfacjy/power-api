@@ -13,8 +13,9 @@ import java.sql.Timestamp;
 @Data
 public class DegreeOfThreePhaseUnbalanceResponse {
     private Timestamp createAt;
-    private double degreeOfThreePhaseUnbalance_current;
-    private double degreeOfThreePhaseUnbalance_voltage;
+
+    private float IUnB; //电流
+    private float UUnB; //电压
 
 
 }
