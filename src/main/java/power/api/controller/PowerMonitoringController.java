@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import power.api.controller.paramModel.GetElectricDataParam;
 import power.api.common.RestResp;
+import power.api.controller.paramModel.GetRunningReportParam;
 import power.api.service.IMeterRecordService;
 
 @RestController
@@ -17,7 +18,7 @@ public class PowerMonitoringController {
     private IMeterRecordService iMeterRecordService;
 
     /**
-     * 电力监测 -> 电力数据 -> 日原始数据 -> 有功功率
+     * 电力监测 -> 电力数据 -> 日原始数据
      * http://www.acrelcloud.cn/SubstationWEB/ElectricData
      */
     @PostMapping("/data/{createAt}")
@@ -72,6 +73,29 @@ public class PowerMonitoringController {
         switch (getElectricDataParam.getElectricType()) {
             case "active_power":
                 restResp = iMeterRecordService.countActivePowerMaxAvgMin(startAt, endAt);
+                break;
+            default:
+                restResp = RestResp.createBy(RestResp.PARAM_ERROR, "参数错误");
+        }
+        return restResp;
+    }
+
+    @PostMapping("/running/report/{createAt}")
+    public RestResp getRunningReport(@ApiParam("指定日期（时间戳）") @PathVariable Long createAt,
+                                     @RequestBody GetRunningReportParam getRunningReportParam) {
+        RestResp restResp = null;
+        if (getRunningReportParam.getMinuteInterval() <= 0) {
+            return RestResp.createBy(RestResp.PARAM_ERROR, "参数错误");
+        }
+        switch (getRunningReportParam.getReportType()) {
+            case "phase_voltage":
+                restResp = iMeterRecordService.producePhaseVoltageReport(createAt, getRunningReportParam.getMinuteInterval());
+                break;
+            case "line_voltage":
+                restResp = RestResp.createBy(RestResp.INVISIBLE, "开发中...");
+                break;
+            case "all":
+                restResp = RestResp.createBy(RestResp.INVISIBLE, "开发中...");
                 break;
             default:
                 restResp = RestResp.createBy(RestResp.PARAM_ERROR, "参数错误");

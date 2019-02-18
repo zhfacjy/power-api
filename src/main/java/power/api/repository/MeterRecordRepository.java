@@ -2,9 +2,12 @@ package power.api.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import power.api.dto.MaxAvgMinDto;
+import power.api.dto.PhaseVoltageReportDto;
 import power.api.model.MeterRecord;
 
+import javax.persistence.SqlResultSetMapping;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
@@ -24,26 +27,50 @@ public interface MeterRecordRepository extends JpaRepository<MeterRecord, Intege
 
     /**
      * 计算有功功率的最大值、平均值、最小值
-     *     按照日期分组
-     *     条件为日期区间
-     *
-     *  function是使用MySql中名为date_format的内置函数，用于格式化日期
-     *
-     *  MaxAvgMinDto用于装载查询结果，构造函数一一对应
+     * 按照日期分组
+     * 条件为日期区间
+     * <p>
+     * 其中的MaxAvgMinDto为自定义接口，用于装载查询结果
+     * AS 后面跟着的字段名 与dto中的方法名对应
      *
      * @param startAt
      * @param endAt
      * @return
      */
-    @Query(value = "select " +
-            "new power.api.dto.MaxAvgMinDto(" +
-            "    max(mr.activePower)," +
-            "    avg(mr.activePower)," +
-            "    min(mr.activePower), " +
-            "    function('date_format', mr.createAt, '%Y-%m-%d') ) " +
-            "from MeterRecord mr " +
-            "where mr.createAt >= ?1 and mr.createAt <= ?2 " +
-            "group by " +
-            "    function('date_format', mr.createAt, '%Y-%m-%d')")
-    List<MaxAvgMinDto> findMaxAvgMinByPower(Timestamp startAt, Timestamp endAt);
+    @Query(value = "SELECT " +
+            "  DATE_FORMAT(mr.create_at, '%Y-%m-%d') AS createAt, " +
+            "  MAX(mr.active_power)                  AS maxHolder, " +
+            "  AVG(mr.active_power)                  AS avgHolder, " +
+            "  MIN(mr.active_power)                  AS minHolder " +
+            "FROM meter_record mr " +
+            "WHERE mr.create_at >= :startAt " +
+            "      AND mr.create_at <= :endAt " +
+            "GROUP BY createAt", nativeQuery = true)
+    List<MaxAvgMinDto> findMaxAvgMinByPower(@Param("startAt") Timestamp startAt, @Param("endAt") Timestamp endAt);
+
+
+    /**
+     * 获取指定日期内，间隔minuteInterval分钟的平均数据
+     *
+     * @param startAt
+     * @param endAt
+     * @param minuteInterval
+     * @return
+     */
+    @Query(value = "SELECT " +
+            "  AVG(mr.va) AS ua, " +
+            "  AVG(mr.vb) AS ub, " +
+            "  AVG(mr.vc) AS uc, " +
+            "  AVG(mr.ia) AS ia, " +
+            "  AVG(mr.ib) AS ib, " +
+            "  AVG(mr.ic) AS ic, " +
+            "  AVG(mr.active_power) AS activePower, " +
+            "  date_add(:startAt, INTERVAL :minuteInterval * floor(timestampdiff(MINUTE, :startAt, mr.create_at) / :minuteInterval) MINUTE) createAt " +
+            "FROM meter_record mr " +
+            "  WHERE mr.create_at >= :startAt " +
+            "        AND mr.create_at < :endAt " +
+            "GROUP BY floor(timestampdiff(MINUTE, :startAt, mr.create_at) / :minuteInterval)", nativeQuery = true)
+    List<PhaseVoltageReportDto> findByCreateAtInterval(@Param("startAt") Timestamp startAt,
+                                                       @Param("endAt") Timestamp endAt,
+                                                       @Param("minuteInterval") int minuteInterval);
 }

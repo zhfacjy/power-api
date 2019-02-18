@@ -1,30 +1,32 @@
 package power.api.service.impl;
 
-import org.checkerframework.checker.units.qual.Temperature;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import power.api.common.RestResp;
 import power.api.controller.paramModel.GetElectricDataParam;
 import power.api.controller.responseModel.powerMonitoring.*;
+import power.api.controller.responseModel.powerMonitoring.runningReport.PhaseReportItem;
+import power.api.controller.responseModel.powerMonitoring.runningReport.ReportResponse;
 import power.api.dto.MaxAvgMinDto;
+import power.api.dto.PhaseVoltageReportDto;
 import power.api.model.MeterRecord;
 import power.api.repository.MeterRecordRepository;
 import power.api.service.IMeterRecordService;
 import power.api.service.impl.DataWrapperClassHolder.DegreeOfThreePhaseUnbalanceHolder;
 import power.api.service.impl.DataWrapperClassHolder.LineVoltageHolder;
 import power.api.service.impl.DataWrapperClassHolder.PhaseHolder;
+import power.api.util.AutoAssembleUtil;
+import power.api.util.PaddingTimeUtil;
 
+import java.lang.reflect.InvocationTargetException;
 import java.sql.Timestamp;
+import java.text.ParseException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -400,6 +402,33 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
         return RestResp.createBySuccess(maxAvgMinDtoList);
     }
 
+    @Override
+    public RestResp producePhaseVoltageReport(long createAt, int minuteInterval) {
+        long endAt = createAt + this.getRemainMillisSecondsOneDay(createAt);
+
+        Timestamp start = new Timestamp(createAt);
+        Timestamp end = new Timestamp(endAt);
+        List<PhaseVoltageReportDto> phaseVoltageReportDtoList = meterRecordRepository.findByCreateAtInterval(start, end, minuteInterval);
+        List<PhaseReportItem> reportItemList = new LinkedList<>();
+        try {
+            for (PhaseVoltageReportDto dto : phaseVoltageReportDtoList) {
+                PhaseReportItem item = new PhaseReportItem();
+                // 合并同名成员变量
+                AutoAssembleUtil.assembleSameNameField(item, dto);
+                // TODO 计算其他相关数据
+
+                //添加到用于返回给前端的数据结构中
+                reportItemList.add(item);
+            }
+            List<PhaseReportItem> phaseReportItems = PaddingTimeUtil.paddingZeroBy(reportItemList, minuteInterval, "CreateAt", PhaseReportItem.class);
+            ReportResponse<PhaseReportItem> reportResponse = new ReportResponse<PhaseReportItem>();
+            reportResponse.setInnerItemList(phaseReportItems);
+            return RestResp.createBySuccess(reportResponse);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return RestResp.createBySuccess(reportItemList);
+    }
 
     private long getRemainMillisSecondsOneDay(long currentTimestamp) {
         LocalDateTime midnight = LocalDateTime.ofInstant(Instant.ofEpochMilli(currentTimestamp),
