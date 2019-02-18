@@ -38,7 +38,7 @@ public class MeterRecord extends CommModel implements Serializable {
     private Double electricEnergy;      // 电能
     private Integer temperature;        // 温度
     private Integer currentLimit;       // 电流上限
-    private String crc;
+    private String crc;                 //CRC校验码
 
     @Override
     public String toString() {
