@@ -31,7 +31,7 @@ import java.util.List;
  * Created by 浩发 on 2019/2/4 13:46
  */
 @Service
-public class MeterRecordServiceImpl implements IMeterRecordService {
+public class MeterRecordService implements IMeterRecordService {
 
     @Autowired
     private MeterRecordRepository meterRecordRepository;

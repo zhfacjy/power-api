@@ -36,7 +36,6 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             //this is very important, since it guarantees the user is not authenticated at all
             SecurityContextHolder.clearContext();
             httpServletResponse.sendError(ex.getHttpStatus().value(), ex.getMessage());
-            return;
         }
 
         filterChain.doFilter(httpServletRequest, httpServletResponse);

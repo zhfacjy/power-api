@@ -45,12 +45,12 @@ public class GlobalExceptionHandlerController {
 
     @ExceptionHandler(AccessDeniedException.class)
     public void handleAccessDeniedException(HttpServletResponse res) throws IOException {
-        res.sendError(HttpStatus.FORBIDDEN.value(), "Access denied");
+        res.sendError(HttpStatus.FORBIDDEN.value(), "用户没登录或token已过期！");
     }
 
     @ExceptionHandler(Exception.class)
     public void handleException(HttpServletResponse res) throws IOException {
-        res.sendError(HttpStatus.INTERNAL_SERVER_ERROR.value(), "INTERNAL_SERVER_ERROR");
+        res.sendError(HttpStatus.INTERNAL_SERVER_ERROR.value(), "服务器发生错误！");
     }
 
 }

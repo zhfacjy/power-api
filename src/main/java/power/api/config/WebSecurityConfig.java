@@ -38,8 +38,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers(
                     "/auth/**",
                     "/druid/**",
-                    "/static/**",
-                    "/attachment/preview"
+                    "/static/**"
                 ).permitAll()
                 // Disallow everything else..
                 .anyRequest().authenticated();
