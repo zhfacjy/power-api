@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class LineVoltageHolder {
-    public float Uab,Ubc,Uca;
+    private float Uab,Ubc,Uca;
 
     public LineVoltageHolder() {
     }

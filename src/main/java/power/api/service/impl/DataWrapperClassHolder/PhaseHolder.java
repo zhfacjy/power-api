@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class PhaseHolder {
-    public float phaseA, phaseB, phaseC;
+    private float phaseA, phaseB, phaseC;
 
     public PhaseHolder() {
     }

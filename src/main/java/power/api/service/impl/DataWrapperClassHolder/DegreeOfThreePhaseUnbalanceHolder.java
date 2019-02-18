@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class DegreeOfThreePhaseUnbalanceHolder {
-    public float IUnb, UUnb;
+    private float IUnb, UUnb;
 
     public DegreeOfThreePhaseUnbalanceHolder() {
     }
