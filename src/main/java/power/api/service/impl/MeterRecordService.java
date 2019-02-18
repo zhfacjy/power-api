@@ -33,7 +33,7 @@ import java.util.List;
  * Created by 浩发 on 2019/2/4 13:46
  */
 @Service
-public class MeterRecordServiceImpl implements IMeterRecordService {
+public class MeterRecordService implements IMeterRecordService {
 
     @Autowired
     private MeterRecordRepository meterRecordRepository;
@@ -374,14 +374,14 @@ public class MeterRecordServiceImpl implements IMeterRecordService {
             DegreeOfThreePhaseUnbalanceResponse degreeOfThreePhaseUnbalanceResponse = new DegreeOfThreePhaseUnbalanceResponse();
             degreeOfThreePhaseUnbalanceResponse.setCreateAt(m.getCreateAt());
             voltageTotal = m.getVa() + m.getVb() + m.getVc();
-            degreeOfThreePhaseUnbalanceHolder.UUnb = (Math.max(Math.max(m.getVa(), m.getVb()), m.getVc()) - voltageTotal) / voltageTotal;
+            degreeOfThreePhaseUnbalanceHolder.setUUnb((Math.max(Math.max(m.getVa(), m.getVb()), m.getVc()) - voltageTotal) / voltageTotal);
 
             currentTotal = m.getIa() + m.getIb() + m.getIc();
-            degreeOfThreePhaseUnbalanceHolder.IUnb = (Math.max(Math.max(m.getIa(), m.getIb()), m.getIc()) - currentTotal) / currentTotal;
+            degreeOfThreePhaseUnbalanceHolder.setIUnb((Math.max(Math.max(m.getIa(), m.getIb()), m.getIc()) - currentTotal) / currentTotal);
 
 
-            degreeOfThreePhaseUnbalanceResponse.setUUnB(degreeOfThreePhaseUnbalanceHolder.UUnb);
-            degreeOfThreePhaseUnbalanceResponse.setIUnB(degreeOfThreePhaseUnbalanceHolder.IUnb);
+            degreeOfThreePhaseUnbalanceResponse.setUUnB(degreeOfThreePhaseUnbalanceHolder.getUUnb());
+            degreeOfThreePhaseUnbalanceResponse.setIUnB(degreeOfThreePhaseUnbalanceHolder.getIUnb());
             degreeOfThreePhaseUnbalanceResponseList.add(degreeOfThreePhaseUnbalanceResponse);
 
         }

@@ -10,8 +10,7 @@ import java.util.Collection;
  */
 public class UserDetail implements UserDetails {
 
-    private Integer userId;
-    private String mobile;
+    private String userId;
     private String username;
 
     @Override
@@ -49,25 +48,15 @@ public class UserDetail implements UserDetails {
         return false;
     }
 
-    public Integer getUserId() {
+    public String getUserId() {
         return userId;
     }
 
-    public void setUserId(Integer userNo) {
+    public void setUserId(String userNo) {
         this.userId = userNo;
     }
 
-    public String getMobile() {
-        return mobile;
-    }
-
-    public void setMobile(String mobile) {
-        this.mobile = mobile;
-    }
-
-    public UserDetail(Integer userId,String mobile,String username) {
+    public UserDetail(String userId) {
         this.userId = userId;
-        this.mobile = mobile;
-        this.username = username;
     }
 }
