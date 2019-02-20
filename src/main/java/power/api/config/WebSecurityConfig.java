@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import power.api.security.JwtTokenFilterConfigurer;
 import power.api.security.JwtTokenProvider;
+import power.api.security.NoAuthenticationEntryPoint;
 
 /**
  * Created by 浩发 on 2019/2/7 10:01
@@ -41,7 +42,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                     "/static/**"
                 ).permitAll()
                 // Disallow everything else..
-                .anyRequest().authenticated();
+                .anyRequest().authenticated()
+                .and()
+                .exceptionHandling().authenticationEntryPoint(new NoAuthenticationEntryPoint());
 
         // If a user try to access a resource without having enough permissions
 //        http.exceptionHandling().accessDeniedPage("/login");

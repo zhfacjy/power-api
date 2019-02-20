@@ -307,7 +307,7 @@ public class MeterRecordService implements IMeterRecordService {
         for (MeterRecord m : meterRecordList) {
             ReactivePowerResponse reactivePowerResponse = new ReactivePowerResponse();
 
-            apparentPowerTotal = (m.getVa() + m.getVb() + m.getVc()) * (m.getIa() + m.getIb() + m.getIc());
+            apparentPowerTotal = m.getVa()* m.getIa() + m.getVb()* m.getIb() + m.getVc()* m.getIc();
 
             reactivePowerResponse.setReactivePowerTotal(apparentPowerTotal * (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getActivePower() / apparentPowerTotal)))));
 
