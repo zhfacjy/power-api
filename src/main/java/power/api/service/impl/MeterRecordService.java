@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import power.api.common.RestResp;
 import power.api.controller.paramModel.GetElectricDataParam;
 import power.api.controller.responseModel.powerMonitoring.*;
-import power.api.controller.responseModel.powerMonitoring.limitReport.PowerReportItem;
+import power.api.controller.responseModel.powerMonitoring.limitReport.PowerReportResponse;
 import power.api.controller.responseModel.powerMonitoring.runningReport.PhaseReportItem;
 import power.api.controller.responseModel.powerMonitoring.runningReport.ReportResponse;
 import power.api.dto.LimitReportDto;
@@ -433,11 +433,11 @@ public class MeterRecordService implements IMeterRecordService {
      * @return
      */
     @Override
-    public RestResp produceActivePowerLimitReport(long createAt, String createAtFormat, String sqlFormat) {
+    public RestResp producePowerLimitReport(long createAt, String createAtFormat, String sqlFormat) {
         String createAtString = DateFormatUtil.formatDateTo(createAt, createAtFormat);
         try {
             // 响应对象和电表之间的索引，方便查找装载数据
-            HashMap<String, PowerReportItem> powerReportResponseHashMap = new HashMap<>();
+            HashMap<String, PowerReportResponse> powerReportResponseHashMap = new HashMap<>();
 
             // 查找有功功率的最大值最小值平均值并填充
             String methodType = "ActivePower";
@@ -467,57 +467,72 @@ public class MeterRecordService implements IMeterRecordService {
             assembleReportAvgValue(limitReportDtoList, powerReportResponseHashMap, methodType);
 
             //构造有功功率的数据
-            List<PowerReportItem> powerReportItemList = new ArrayList<>(limitReportDtoList.size());
+            List<PowerReportResponse> powerReportResponseList = new ArrayList<>(limitReportDtoList.size());
             for (String s : powerReportResponseHashMap.keySet()) {
-                powerReportItemList.add(powerReportResponseHashMap.get(s));
+                powerReportResponseList.add(powerReportResponseHashMap.get(s));
             }
-            return RestResp.createBySuccess(powerReportItemList);
+            return RestResp.createBySuccess(powerReportResponseList);
         } catch (Exception e) {
             e.printStackTrace();
             return RestResp.createBy(RestResp.ERROR, "产生内部错误，来源：极值报表统计");
         }
     }
 
+    /**
+     * 根据maxMethodName的名字去设置最大值
+     * 利用反射，找到到setMax[type]的方法，并设置值，其中type为自定义
+     *
+     * @param limitReportDtoList
+     * @param powerReportResponseHashMap
+     * @param type
+     * @throws NoSuchMethodException
+     * @throws IllegalAccessException
+     * @throws InvocationTargetException
+     */
     private void assembleReportMaxValue(List<LimitReportDto> limitReportDtoList,
-                                        HashMap<String, PowerReportItem> powerReportResponseHashMap,
+                                        HashMap<String, PowerReportResponse> powerReportResponseHashMap,
                                         String type) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         for (LimitReportDto limitReportDto : limitReportDtoList) {
-            PowerReportItem powerReportItem = powerReportResponseHashMap.get(limitReportDto.getMeter());
-            if (powerReportItem == null) {
-                powerReportItem = new PowerReportItem();
+            PowerReportResponse powerReportResponse = powerReportResponseHashMap.get(limitReportDto.getMeter());
+            if (powerReportResponse == null) {
+                powerReportResponse = new PowerReportResponse();
             }
-            powerReportItem.setMeter(limitReportDto.getMeter());
-            powerReportItem.setCreateAt(limitReportDto.getCreateAt().substring(0, 10));
+            powerReportResponse.setMeter(limitReportDto.getMeter());
+            powerReportResponse.setCreateAt(limitReportDto.getCreateAt().substring(0, 10));
             String maxMethodName = "setMax" + type;
             AutoAssembleUtil
-                    .assembleBySpecifiedMethod(powerReportItem, maxMethodName, limitReportDto.getLimitValue());
+                    .assembleBySpecifiedMethod(powerReportResponse, maxMethodName, limitReportDto.getLimitValue());
             maxMethodName = "setMax" + type + "CreateAt";
             AutoAssembleUtil
-                    .assembleBySpecifiedMethod(powerReportItem, maxMethodName, limitReportDto.getCreateAt());
-            powerReportResponseHashMap.put(limitReportDto.getMeter(), powerReportItem);
+                    .assembleBySpecifiedMethod(powerReportResponse, maxMethodName, limitReportDto.getCreateAt());
+            powerReportResponseHashMap.put(limitReportDto.getMeter(), powerReportResponse);
         }
     }
 
     private void assembleReportMinValue(List<LimitReportDto> limitReportDtoList,
-                                        HashMap<String, PowerReportItem> powerReportResponseHashMap,
+                                        HashMap<String, PowerReportResponse> powerReportResponseHashMap,
                                         String type) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         for (LimitReportDto limitReportDto : limitReportDtoList) {
-            // 获取之前放入索引的对象
-            PowerReportItem powerReportItem = powerReportResponseHashMap.get(limitReportDto.getMeter());
+            PowerReportResponse powerReportResponse = powerReportResponseHashMap.get(limitReportDto.getMeter());
+            if (powerReportResponse == null) {
+                powerReportResponse = new PowerReportResponse();
+            }
             AutoAssembleUtil
-                    .assembleBySpecifiedMethod(powerReportItem, "setMin" + type, limitReportDto.getLimitValue());
+                    .assembleBySpecifiedMethod(powerReportResponse, "setMin" + type, limitReportDto.getLimitValue());
             AutoAssembleUtil
-                    .assembleBySpecifiedMethod(powerReportItem, "setMin" + type + "CreateAt", limitReportDto.getCreateAt());
+                    .assembleBySpecifiedMethod(powerReportResponse, "setMin" + type + "CreateAt", limitReportDto.getCreateAt());
         }
     }
 
     private void assembleReportAvgValue(List<LimitReportDto> limitReportDtoList,
-                                        HashMap<String, PowerReportItem> powerReportResponseHashMap,
+                                        HashMap<String, PowerReportResponse> powerReportResponseHashMap,
                                         String type) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         for (LimitReportDto limitReportDto : limitReportDtoList) {
-            // 获取之前放入索引的对象
-            PowerReportItem powerReportItem = powerReportResponseHashMap.get(limitReportDto.getMeter());
-            AutoAssembleUtil.assembleBySpecifiedMethod(powerReportItem, "setAvg" + type, limitReportDto.getLimitValue());
+            PowerReportResponse powerReportResponse = powerReportResponseHashMap.get(limitReportDto.getMeter());
+            if (powerReportResponse == null) {
+                powerReportResponse = new PowerReportResponse();
+            }
+            AutoAssembleUtil.assembleBySpecifiedMethod(powerReportResponse, "setAvg" + type, limitReportDto.getLimitValue());
         }
     }
 

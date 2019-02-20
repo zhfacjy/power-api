@@ -18,6 +18,9 @@ public class MeterRecordCalculator implements IMeterRecordCalculator {
         instance = instance == null ? new MeterRecordCalculator() : instance;
     }
 
+    private MeterRecordCalculator() {
+    }
+
 
     @Override
     public float countReactivePower(MeterRecord mr, Boolean three) {
@@ -33,7 +36,7 @@ public class MeterRecordCalculator implements IMeterRecordCalculator {
     @Override
     public float countApparentPower(MeterRecord mr, Boolean three) {
         if (!three) {
-            return mr.getVa()* mr.getIa() + mr.getVb()* mr.getIb() + mr.getVc()* mr.getIc();
+            return mr.getVa() * mr.getIa() + mr.getVb() * mr.getIb() + mr.getVc() * mr.getIc();
         } else {
             return 0;
         }

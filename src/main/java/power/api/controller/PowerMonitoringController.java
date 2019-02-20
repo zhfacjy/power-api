@@ -125,7 +125,7 @@ public class PowerMonitoringController {
 
         switch (getLimitReportParam.getReportType()) {
             case "power":
-                restResp = iMeterRecordService.produceActivePowerLimitReport(createAt, dateFormat, sqlDateFormat);
+                restResp = iMeterRecordService.producePowerLimitReport(createAt, dateFormat, sqlDateFormat);
                 break;
             default:
                 restResp = RestResp.createBy(RestResp.PARAM_ERROR, "参数错误");

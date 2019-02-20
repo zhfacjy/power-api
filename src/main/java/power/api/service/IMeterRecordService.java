@@ -55,5 +55,5 @@ public interface IMeterRecordService {
 
     RestResp producePhaseVoltageReport(long createAt, int minuteInterval);
 
-    RestResp produceActivePowerLimitReport(long createAt, String createAtFormat, String sqlFormat);
+    RestResp producePowerLimitReport(long createAt, String createAtFormat, String sqlFormat);
 }
