@@ -83,20 +83,20 @@ GROUP BY meter;
 
 SELECT
   m1.meter,
-  ((m1.ia * m1.va + m1.ib * m1.vb + m1.ic * m1.vc) * (-cos((pi() / 2) + DEGREES(
-      acos(m1.active_power / (m1.ia * m1.va + m1.ib * m1.vb + m1.ic * m1.vc)))))) AS max_reactive_power
+  ((m1.ia * m1.ua + m1.ib * m1.ub + m1.ic * m1.uc) * (-cos((pi() / 2) + DEGREES(
+      acos(m1.active_power / (m1.ia * m1.ua + m1.ib * m1.ub + m1.ic * m1.uc)))))) AS max_reactive_power
 FROM meter_record AS m1 INNER JOIN (
                                      SELECT
                                        m2.meter,
-                                       max((m2.ia * m2.va + m2.ib * m2.vb + m2.ic * m2.vc) * (-cos((pi() / 2) + DEGREES(
-                                           acos(m2.active_power / ((m2.ia * m2.va + m2.ib * m2.vb +
-                                                                    m2.ic * m2.vc))))))) AS max_reactive_power
+                                       max((m2.ia * m2.ua + m2.ib * m2.ub + m2.ic * m2.uc) * (-cos((pi() / 2) + DEGREES(
+                                           acos(m2.active_power / ((m2.ia * m2.ua + m2.ib * m2.ub +
+                                                                    m2.ic * m2.uc))))))) AS max_reactive_power
                                      FROM meter_record AS m2
                                      WHERE UNIX_TIMESTAMP(create_at) >= UNIX_TIMESTAMP('2019-02-16 00:00:00')
                                            AND UNIX_TIMESTAMP(create_at) < UNIX_TIMESTAMP('2019-02-17 00:00:00')
                                      GROUP BY meter) AS m2 ON m1.meter = m2.meter AND m2.max_reactive_power = (
-  (m1.ia * m1.va + m1.ib * m1.vb + m1.ic * m1.vc) *
-  (-cos((pi() / 2) + DEGREES(acos(m1.active_power / ((m1.ia * m1.va + m1.ib * m1.vb + m1.ic * m1.vc)))))));
+  (m1.ia * m1.ua + m1.ib * m1.ub + m1.ic * m1.uc) *
+  (-cos((pi() / 2) + DEGREES(acos(m1.active_power / ((m1.ia * m1.ua + m1.ib * m1.ub + m1.ic * m1.uc)))))));
 
 SELECT
   m1.meter              AS                       meter,
@@ -105,24 +105,24 @@ SELECT
 FROM (
        SELECT
          m2.meter,
-         MAX((m2.ia * m2.va + m2.ib * m2.vb + m2.ic * m2.vc) * (-cos((pi() / 2) + DEGREES(
-             ACOS(m2.active_power / ((m2.ia * m2.va + m2.ib * m2.vb +
-                                      m2.ic * m2.vc))))))) AS max_reactive_power
+         MAX((m2.ia * m2.ua + m2.ib * m2.ub + m2.ic * m2.uc) * (-cos((pi() / 2) + DEGREES(
+             ACOS(m2.active_power / ((m2.ia * m2.ua + m2.ib * m2.ub +
+                                      m2.ic * m2.uc))))))) AS max_reactive_power
        FROM meter_record AS m2
        WHERE DATE_FORMAT(create_at, '%Y-%m') = '2019-02'
        GROUP BY meter) AS m1 LEFT JOIN meter_record m2 ON m1.meter = m2.meter AND m1.max_reactive_power =
-                                                                                  (m2.ia * m2.va + m2.ib * m2.vb +
-                                                                                   m2.ic * m2.vc) *
+                                                                                  (m2.ia * m2.ua + m2.ib * m2.ub +
+                                                                                   m2.ic * m2.uc) *
                                                                                   (-cos((pi() / 2) + DEGREES(
                                                                                       ACOS(m2.active_power / ((
-                                                                                        m2.ia * m2.va + m2.ib * m2.vb +
-                                                                                        m2.ic * m2.vc))))));
+                                                                                        m2.ia * m2.ua + m2.ib * m2.ub +
+                                                                                        m2.ic * m2.uc))))));
 
 SELECT
   m2.meter                                          AS meter,
-  AVG((m2.ia * m2.va + m2.ib * m2.vb + m2.ic * m2.vc) * (-cos((pi() / 2) + DEGREES(
-      ACOS(m2.active_power / ((m2.ia * m2.va + m2.ib * m2.vb +
-                               m2.ic * m2.vc))))))) AS limitValue,
+  AVG((m2.ia * m2.ua + m2.ib * m2.ub + m2.ic * m2.uc) * (-cos((pi() / 2) + DEGREES(
+      ACOS(m2.active_power / ((m2.ia * m2.ua + m2.ib * m2.ub +
+                               m2.ic * m2.uc))))))) AS limitValue,
   DATE_FORMAT(m2.create_at, '%Y-%m-%d')             AS createAt
 FROM meter_record AS m2
 WHERE DATE_FORMAT(create_at, '%Y-%m-%d') = '2019-02-18'
@@ -135,17 +135,17 @@ SELECT
 FROM (
        SELECT
          m2.meter,
-         MAX(m2.ia * m2.va + m2.ib * m2.vb + m2.ic * m2.vc) AS power
+         MAX(m2.ia * m2.ua + m2.ib * m2.ub + m2.ic * m2.uc) AS power
        FROM meter_record AS m2
        WHERE DATE_FORMAT(create_at, '%Y-%m-18') = '2019-02-18'
        GROUP BY meter) AS m1 LEFT JOIN meter_record m2 ON m1.meter = m2.meter
-                                                          AND m1.power = (m2.ia * m2.va
-                                                                          + m2.ib * m2.vb
-                                                                          + m2.ic * m2.vc);
+                                                          AND m1.power = (m2.ia * m2.ua
+                                                                          + m2.ib * m2.ub
+                                                                          + m2.ic * m2.uc);
 
 SELECT
   m2.meter                                           AS meter,
-  AVG(m2.ia * m2.va + m2.ib * m2.vb + m2.ic * m2.vc) AS limitValue,
+  AVG(m2.ia * m2.ua + m2.ib * m2.ub + m2.ic * m2.uc) AS limitValue,
   DATE_FORMAT(m2.create_at, '%Y-%m-%d')              AS createAt
 FROM meter_record AS m2
 WHERE DATE_FORMAT(create_at, '%Y-%m-%d') = '2019-02-18'
@@ -182,9 +182,9 @@ WHERE UNIX_TIMESTAMP(mr.create_at) >= UNIX_TIMESTAMP('2019-02-17 20:00:00')
       AND UNIX_TIMESTAMP(mr.create_at) <= UNIX_TIMESTAMP('2019-02-17 20:36:00');
 
 SELECT
-  AVG(mr.va)           AS ua,
-  AVG(mr.vb)           AS ub,
-  AVG(mr.vc)           AS uc,
+  AVG(mr.ua)           AS ua,
+  AVG(mr.ub)           AS ub,
+  AVG(mr.uc)           AS uc,
   AVG(mr.ia)           AS ia,
   AVG(mr.ib)           AS ib,
   AVG(mr.ic)           AS ic,

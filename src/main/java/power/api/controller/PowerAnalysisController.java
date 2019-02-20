@@ -28,4 +28,9 @@ public class PowerAnalysisController {
         return RestResp.createBySuccess(powerAnalysisService.getPowerAnalysis(dataType, createAt));
     }
 
+    @GetMapping("/power/yearOnYear/{centralNode}")
+    public RestResp yearOnYear(@ApiParam("中心节点（默认传04）") @PathVariable String centralNode) {
+        return RestResp.createBySuccess(powerAnalysisService.yearOnYear(centralNode));
+    }
+
 }
