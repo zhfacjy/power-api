@@ -6,6 +6,7 @@ import power.api.common.RestResp;
 import power.api.controller.paramModel.GetElectricDataParam;
 import power.api.controller.responseModel.powerMonitoring.*;
 import power.api.controller.responseModel.powerMonitoring.limitReport.ElectricCurrentReportResponse;
+import power.api.controller.responseModel.powerMonitoring.limitReport.LineVoltageReportResponse;
 import power.api.controller.responseModel.powerMonitoring.limitReport.PhaseVoltageReportResponse;
 import power.api.controller.responseModel.powerMonitoring.limitReport.PowerReportResponse;
 import power.api.controller.responseModel.powerMonitoring.runningReport.PhaseReportItem;
@@ -557,6 +558,48 @@ public class MeterRecordService implements IMeterRecordService {
 
             //构造给前端的数据
             List<PhaseVoltageReportResponse> electricCurrentList = this.processHashMapGetList(phaseVoltageReportHashMap);
+            return RestResp.createBySuccess(electricCurrentList);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return RestResp.createBy(RestResp.ERROR, "产生内部错误，来源：极值报表统计");
+        }
+    }
+
+    @Override
+    public RestResp produceLineVoltageLimitReport(long createAt, String createAtFormat, String sqlFormat) {
+        String createAtString = DateFormatUtil.formatDateTo(createAt, createAtFormat);
+        try {
+            // 响应对象和电表之间的索引，方便查找装载数据
+            HashMap<String, LineVoltageReportResponse> lineVoltageReportHashMap = new HashMap<>();
+            // 查找A相电压的最大值最小值平均值并填充
+            String methodType = "Uab";
+            List<LimitReportDto> limitReportDtoList = meterRecordRepository.findMaxUabByCreateAt(sqlFormat, createAtString);
+            assembleReportMaxValue(limitReportDtoList, lineVoltageReportHashMap, methodType, LineVoltageReportResponse.class);
+            limitReportDtoList = meterRecordRepository.findMinUabByCreateAt(sqlFormat, createAtString);
+            assembleReportMinValue(limitReportDtoList, lineVoltageReportHashMap, methodType);
+            limitReportDtoList = meterRecordRepository.findAvgUabByCreateAt(sqlFormat, createAtString);
+            assembleReportAvgValue(limitReportDtoList, lineVoltageReportHashMap, methodType);
+
+            // 查找B相电压的最大值最小值平均值并填充
+            methodType = "Ubc";
+            limitReportDtoList = meterRecordRepository.findMaxUbcByCreateAt(sqlFormat, createAtString);
+            assembleReportMaxValue(limitReportDtoList, lineVoltageReportHashMap, methodType, LineVoltageReportResponse.class);
+            limitReportDtoList = meterRecordRepository.findMinUbcByCreateAt(sqlFormat, createAtString);
+            assembleReportMinValue(limitReportDtoList, lineVoltageReportHashMap, methodType);
+            limitReportDtoList = meterRecordRepository.findAvgUbcByCreateAt(sqlFormat, createAtString);
+            assembleReportAvgValue(limitReportDtoList, lineVoltageReportHashMap, methodType);
+
+            // 查找C相电压的最大值最小值平均值并填充
+            methodType = "Uca";
+            limitReportDtoList = meterRecordRepository.findMaxUcaByCreateAt(sqlFormat, createAtString);
+            assembleReportMaxValue(limitReportDtoList, lineVoltageReportHashMap, methodType, LineVoltageReportResponse.class);
+            limitReportDtoList = meterRecordRepository.findMinUcaByCreateAt(sqlFormat, createAtString);
+            assembleReportMinValue(limitReportDtoList, lineVoltageReportHashMap, methodType);
+            limitReportDtoList = meterRecordRepository.findAvgUcaByCreateAt(sqlFormat, createAtString);
+            assembleReportAvgValue(limitReportDtoList, lineVoltageReportHashMap, methodType);
+
+            //构造给前端的数据
+            List<LineVoltageReportResponse> electricCurrentList = this.processHashMapGetList(lineVoltageReportHashMap);
             return RestResp.createBySuccess(electricCurrentList);
         } catch (Exception e) {
             e.printStackTrace();

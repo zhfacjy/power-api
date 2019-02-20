@@ -134,6 +134,7 @@ public class PowerMonitoringController {
                 restResp = iMeterRecordService.producePhaseVoltageLimitReport(createAt, dateFormat, sqlDateFormat);
                 break;
             case "line_voltage":
+                restResp = iMeterRecordService.produceLineVoltageLimitReport(createAt, dateFormat, sqlDateFormat);
                 break;
             default:
                 restResp = RestResp.createBy(RestResp.PARAM_ERROR, "参数错误");

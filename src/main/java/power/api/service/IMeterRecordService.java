@@ -60,4 +60,5 @@ public interface IMeterRecordService {
     RestResp produceElectricCurrentLimitReport(long createAt, String createAtFormat, String sqlFormat);
 
     RestResp producePhaseVoltageLimitReport(long createAt, String createAtFormat, String sqlFormat);
+    RestResp produceLineVoltageLimitReport(long createAt, String createAtFormat, String sqlFormat);
 }
