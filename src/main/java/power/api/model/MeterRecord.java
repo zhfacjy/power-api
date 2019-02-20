@@ -24,9 +24,9 @@ public class MeterRecord extends CommModel implements Serializable {
     private String meter;               // 电表
     private String command;             // 命令
     private String earlyWarning;        // 预警
-    private Float va;                   // a相电压
-    private Float vb;
-    private Float vc;
+    private Float ua;                   // a相电压
+    private Float ub;
+    private Float uc;
     private Float ia;                   // A相电流
     private Float ib;
     private Float ic;
@@ -48,9 +48,9 @@ public class MeterRecord extends CommModel implements Serializable {
                 ", meter='" + meter + '\'' +
                 ", command='" + command + '\'' +
                 ", earlyWarning='" + earlyWarning + '\'' +
-                ", va=" + va +
-                ", vb=" + vb +
-                ", vc=" + vc +
+                ", va=" + ua +
+                ", vb=" + ub +
+                ", vc=" + uc +
                 ", ia=" + ia +
                 ", ib=" + ib +
                 ", ic=" + ic +
