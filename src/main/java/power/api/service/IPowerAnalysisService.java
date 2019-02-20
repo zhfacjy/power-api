@@ -1,6 +1,6 @@
 package power.api.service;
 
-import java.util.HashMap;
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * Created by 浩发 on 2019/2/17 17:28
@@ -8,6 +8,8 @@ import java.util.HashMap;
  */
 public interface IPowerAnalysisService {
 
-    HashMap<String, Double> getPowerAnalysis(Integer dataType, String createAt);
+    JSONObject getPowerAnalysis(Integer dataType, String createAt);
+
+    JSONObject yearOnYear(String centralNode);
 
 }
