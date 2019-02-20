@@ -232,4 +232,270 @@ public interface MeterRecordRepository extends JpaRepository<MeterRecord, Intege
             "GROUP BY meter;", nativeQuery = true)
     List<LimitReportDto> findAvgApparentPowerByCreateAt(@Param("format") String format,
                                                         @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  m1.meter                                       AS meter, " +
+            "  m1.max_ia                                      AS limitValue, " +
+            "  DATE_FORMAT(m2.create_at, '%Y-%m-%d %H:%i:%s') AS createAt " +
+            "FROM ( " +
+            "    (SELECT " +
+            "       meter, " +
+            "       MAX(ia) AS max_ia " +
+            "     FROM meter_record " +
+            "     WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "     GROUP BY meter) AS m1 LEFT JOIN meter_record AS m2 " +
+            "      ON m1.meter = m2.meter AND m1.max_ia = m2.ia AND DATE_FORMAT(m2.create_at, :format) = :createAt " +
+            ") " +
+            "GROUP BY m2.meter;", nativeQuery = true)
+    List<LimitReportDto> findMaxIaByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  m1.meter                                       AS meter, " +
+            "  m1.max_ia                                      AS limitValue, " +
+            "  DATE_FORMAT(m2.create_at, '%Y-%m-%d %H:%i:%s') AS createAt " +
+            "FROM ( " +
+            "    (SELECT " +
+            "       meter, " +
+            "       MIN(ia) AS max_ia " +
+            "     FROM meter_record " +
+            "     WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "     GROUP BY meter) AS m1 LEFT JOIN meter_record AS m2 " +
+            "      ON m1.meter = m2.meter AND m1.max_ia = m2.ia AND DATE_FORMAT(m2.create_at, :format) = :createAt " +
+            ") " +
+            "GROUP BY m2.meter;", nativeQuery = true)
+    List<LimitReportDto> findMinIaByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  meter, " +
+            "  AVG(ia)                                     AS limitValue, " +
+            "  DATE_FORMAT(create_at, '%Y-%m-%d') AS createAt " +
+            "FROM meter_record " +
+            "WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "GROUP BY meter;", nativeQuery = true)
+    List<LimitReportDto> findAvgIaByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+
+    @Query(value = "SELECT DISTINCT " +
+            "  m1.meter                                       AS meter, " +
+            "  m1.max_ib                                      AS limitValue, " +
+            "  DATE_FORMAT(m2.create_at, '%Y-%m-%d %H:%i:%s') AS createAt " +
+            "FROM ( " +
+            "    (SELECT " +
+            "       meter, " +
+            "       MAX(ib) AS max_ib " +
+            "     FROM meter_record " +
+            "     WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "     GROUP BY meter) AS m1 LEFT JOIN meter_record AS m2 " +
+            "      ON m1.meter = m2.meter AND m1.max_ib = m2.ib AND DATE_FORMAT(m2.create_at, :format) = :createAt " +
+            ") " +
+            "GROUP BY m2.meter;", nativeQuery = true)
+    List<LimitReportDto> findMaxIbByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  m1.meter                                       AS meter, " +
+            "  m1.max_ib                                      AS limitValue, " +
+            "  DATE_FORMAT(m2.create_at, '%Y-%m-%d %H:%i:%s') AS createAt " +
+            "FROM ( " +
+            "    (SELECT " +
+            "       meter, " +
+            "       MIN(ib) AS max_ib " +
+            "     FROM meter_record " +
+            "     WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "     GROUP BY meter) AS m1 LEFT JOIN meter_record AS m2 " +
+            "      ON m1.meter = m2.meter AND m1.max_ib = m2.ib AND DATE_FORMAT(m2.create_at, :format) = :createAt " +
+            ") " +
+            "GROUP BY m2.meter;", nativeQuery = true)
+    List<LimitReportDto> findMinIbByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  meter, " +
+            "  AVG(ib)                                     AS limitValue, " +
+            "  DATE_FORMAT(create_at, '%Y-%m-%d') AS createAt " +
+            "FROM meter_record " +
+            "WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "GROUP BY meter;", nativeQuery = true)
+    List<LimitReportDto> findAvgIbByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  m1.meter                                       AS meter, " +
+            "  m1.max_ic                                      AS limitValue, " +
+            "  DATE_FORMAT(m2.create_at, '%Y-%m-%d %H:%i:%s') AS createAt " +
+            "FROM ( " +
+            "    (SELECT " +
+            "       meter, " +
+            "       MAX(ic) AS max_ic " +
+            "     FROM meter_record " +
+            "     WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "     GROUP BY meter) AS m1 LEFT JOIN meter_record AS m2 " +
+            "      ON m1.meter = m2.meter AND m1.max_ic = m2.ic AND DATE_FORMAT(m2.create_at, :format) = :createAt " +
+            ") " +
+            "GROUP BY m2.meter;", nativeQuery = true)
+    List<LimitReportDto> findMaxIcByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  m1.meter                                       AS meter, " +
+            "  m1.max_ic                                      AS limitValue, " +
+            "  DATE_FORMAT(m2.create_at, '%Y-%m-%d %H:%i:%s') AS createAt " +
+            "FROM ( " +
+            "    (SELECT " +
+            "       meter, " +
+            "       MIN(ic) AS max_ic " +
+            "     FROM meter_record " +
+            "     WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "     GROUP BY meter) AS m1 LEFT JOIN meter_record AS m2 " +
+            "      ON m1.meter = m2.meter AND m1.max_ic = m2.ic AND DATE_FORMAT(m2.create_at, :format) = :createAt " +
+            ") " +
+            "GROUP BY m2.meter;", nativeQuery = true)
+    List<LimitReportDto> findMinIcByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  meter, " +
+            "  AVG(ic)                                     AS limitValue, " +
+            "  DATE_FORMAT(create_at, '%Y-%m-%d') AS createAt " +
+            "FROM meter_record " +
+            "WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "GROUP BY meter;", nativeQuery = true)
+    List<LimitReportDto> findAvgIcByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  m1.meter                                       AS meter, " +
+            "  m1.max_ua                                      AS limitValue, " +
+            "  DATE_FORMAT(m2.create_at, '%Y-%m-%d %H:%i:%s') AS createAt " +
+            "FROM ( " +
+            "    (SELECT " +
+            "       meter, " +
+            "       MAX(ua) AS max_ua " +
+            "     FROM meter_record " +
+            "     WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "     GROUP BY meter) AS m1 LEFT JOIN meter_record AS m2 " +
+            "      ON m1.meter = m2.meter AND m1.max_ua = m2.ua AND DATE_FORMAT(m2.create_at, :format) = :createAt " +
+            ") " +
+            "GROUP BY m2.meter;", nativeQuery = true)
+    List<LimitReportDto> findMaxUaByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  m1.meter                                       AS meter, " +
+            "  m1.max_ua                                      AS limitValue, " +
+            "  DATE_FORMAT(m2.create_at, '%Y-%m-%d %H:%i:%s') AS createAt " +
+            "FROM ( " +
+            "    (SELECT " +
+            "       meter, " +
+            "       MIN(ua) AS max_ua " +
+            "     FROM meter_record " +
+            "     WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "     GROUP BY meter) AS m1 LEFT JOIN meter_record AS m2 " +
+            "      ON m1.meter = m2.meter AND m1.max_ua = m2.ua AND DATE_FORMAT(m2.create_at, :format) = :createAt " +
+            ") " +
+            "GROUP BY m2.meter;", nativeQuery = true)
+    List<LimitReportDto> findMinUaByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  meter, " +
+            "  AVG(ua)                                     AS limitValue, " +
+            "  DATE_FORMAT(create_at, '%Y-%m-%d') AS createAt " +
+            "FROM meter_record " +
+            "WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "GROUP BY meter;", nativeQuery = true)
+    List<LimitReportDto> findAvgUaByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  m1.meter                                       AS meter, " +
+            "  m1.max_ub                                      AS limitValue, " +
+            "  DATE_FORMAT(m2.create_at, '%Y-%m-%d %H:%i:%s') AS createAt " +
+            "FROM ( " +
+            "    (SELECT " +
+            "       meter, " +
+            "       MAX(ub) AS max_ub " +
+            "     FROM meter_record " +
+            "     WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "     GROUP BY meter) AS m1 LEFT JOIN meter_record AS m2 " +
+            "      ON m1.meter = m2.meter AND m1.max_ub = m2.ub AND DATE_FORMAT(m2.create_at, :format) = :createAt " +
+            ") " +
+            "GROUP BY m2.meter;", nativeQuery = true)
+    List<LimitReportDto> findMaxUbByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+
+    @Query(value = "SELECT " +
+            "  m1.meter                                       AS meter, " +
+            "  m1.max_ub                                      AS limitValue, " +
+            "  DATE_FORMAT(m2.create_at, '%Y-%m-%d %H:%i:%s') AS createAt " +
+            "FROM ( " +
+            "    (SELECT " +
+            "       meter, " +
+            "       MIN(ub) AS max_ub " +
+            "     FROM meter_record " +
+            "     WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "     GROUP BY meter) AS m1 LEFT JOIN meter_record AS m2 " +
+            "      ON m1.meter = m2.meter AND m1.max_ub = m2.ub AND DATE_FORMAT(m2.create_at, :format) = :createAt " +
+            ") " +
+            "GROUP BY m2.meter;", nativeQuery = true)
+    List<LimitReportDto> findMinUbByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  meter, " +
+            "  AVG(ub)                                     AS limitValue, " +
+            "  DATE_FORMAT(create_at, '%Y-%m-%d') AS createAt " +
+            "FROM meter_record " +
+            "WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "GROUP BY meter;", nativeQuery = true)
+    List<LimitReportDto> findAvgUbByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  m1.meter                                       AS meter, " +
+            "  m1.max_uc                                      AS limitValue, " +
+            "  DATE_FORMAT(m2.create_at, '%Y-%m-%d %H:%i:%s') AS createAt " +
+            "FROM ( " +
+            "    (SELECT " +
+            "       meter, " +
+            "       MAX(uc) AS max_uc " +
+            "     FROM meter_record " +
+            "     WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "     GROUP BY meter) AS m1 LEFT JOIN meter_record AS m2 " +
+            "      ON m1.meter = m2.meter AND m1.max_uc = m2.uc AND DATE_FORMAT(m2.create_at, :format) = :createAt " +
+            ") " +
+            "GROUP BY m2.meter;", nativeQuery = true)
+    List<LimitReportDto> findMaxUcByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  m1.meter                                       AS meter, " +
+            "  m1.max_uc                                      AS limitValue, " +
+            "  DATE_FORMAT(m2.create_at, '%Y-%m-%d %H:%i:%s') AS createAt " +
+            "FROM ( " +
+            "    (SELECT " +
+            "       meter, " +
+            "       MIN(uc) AS max_uc " +
+            "     FROM meter_record " +
+            "     WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "     GROUP BY meter) AS m1 LEFT JOIN meter_record AS m2 " +
+            "      ON m1.meter = m2.meter AND m1.max_uc = m2.uc AND DATE_FORMAT(m2.create_at, :format) = :createAt " +
+            ") " +
+            "GROUP BY m2.meter;", nativeQuery = true)
+    List<LimitReportDto> findMinUcByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
+
+    @Query(value = "SELECT " +
+            "  meter, " +
+            "  AVG(uc)                                     AS limitValue, " +
+            "  DATE_FORMAT(create_at, '%Y-%m-%d') AS createAt " +
+            "FROM meter_record " +
+            "WHERE DATE_FORMAT(create_at, :format) = :createAt " +
+            "GROUP BY meter;", nativeQuery = true)
+    List<LimitReportDto> findAvgUcByCreateAt(@Param("format") String format,
+                                             @Param("createAt") String createAt);
 }

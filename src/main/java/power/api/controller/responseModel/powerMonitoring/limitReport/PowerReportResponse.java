@@ -35,4 +35,9 @@ public class PowerReportResponse {
     private Double maxApparentPower;
     private Double minApparentPower;
     private Double avgApparentPower;
+
+    public PowerReportResponse(String meter, String createAt) {
+        this.meter = meter;
+        this.createAt = createAt;
+    }
 }

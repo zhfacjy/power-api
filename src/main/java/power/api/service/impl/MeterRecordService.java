@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import power.api.common.RestResp;
 import power.api.controller.paramModel.GetElectricDataParam;
 import power.api.controller.responseModel.powerMonitoring.*;
+import power.api.controller.responseModel.powerMonitoring.limitReport.ElectricCurrentReportResponse;
+import power.api.controller.responseModel.powerMonitoring.limitReport.PhaseVoltageReportResponse;
 import power.api.controller.responseModel.powerMonitoring.limitReport.PowerReportResponse;
 import power.api.controller.responseModel.powerMonitoring.runningReport.PhaseReportItem;
 import power.api.controller.responseModel.powerMonitoring.runningReport.ReportResponse;
@@ -22,9 +24,9 @@ import power.api.util.DateFormatUtil;
 import power.api.util.PaddingTimeUtil;
 import power.api.util.meterRecordCalculator.MeterRecordCalculator;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Timestamp;
-import java.text.ParseException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -445,7 +447,7 @@ public class MeterRecordService implements IMeterRecordService {
             // 查找有功功率的最大值最小值平均值并填充
             String methodType = "ActivePower";
             List<LimitReportDto> limitReportDtoList = meterRecordRepository.findMaxActivePowerByCreateAt(sqlFormat, createAtString);
-            assembleReportMaxValue(limitReportDtoList, powerReportResponseHashMap, methodType);
+            assembleReportMaxValue(limitReportDtoList, powerReportResponseHashMap, methodType, PowerReportResponse.class);
             limitReportDtoList = meterRecordRepository.findMinActivePowerByCreateAt(sqlFormat, createAtString);
             assembleReportMinValue(limitReportDtoList, powerReportResponseHashMap, methodType);
             limitReportDtoList = meterRecordRepository.findAvgActivePowerByCreateAt(sqlFormat, createAtString);
@@ -454,7 +456,7 @@ public class MeterRecordService implements IMeterRecordService {
             // 查找无功功率的最大值最小值平均值并填充
             methodType = "ReactivePower";
             limitReportDtoList = meterRecordRepository.findMaxReactivePowerByCreateAt(sqlFormat, createAtString);
-            assembleReportMaxValue(limitReportDtoList, powerReportResponseHashMap, methodType);
+            assembleReportMaxValue(limitReportDtoList, powerReportResponseHashMap, methodType, PowerReportResponse.class);
             limitReportDtoList = meterRecordRepository.findMinReactivePowerByCreateAt(sqlFormat, createAtString);
             assembleReportMinValue(limitReportDtoList, powerReportResponseHashMap, methodType);
             limitReportDtoList = meterRecordRepository.findAvgReactivePowerByCreateAt(sqlFormat, createAtString);
@@ -463,22 +465,111 @@ public class MeterRecordService implements IMeterRecordService {
             // 查找视在功率的最大值最小值平均值并填充
             methodType = "ApparentPower";
             limitReportDtoList = meterRecordRepository.findMaxApparentPowerByCreateAt(sqlFormat, createAtString);
-            assembleReportMaxValue(limitReportDtoList, powerReportResponseHashMap, methodType);
+            assembleReportMaxValue(limitReportDtoList, powerReportResponseHashMap, methodType, PowerReportResponse.class);
             limitReportDtoList = meterRecordRepository.findMinApparentPowerByCreateAt(sqlFormat, createAtString);
             assembleReportMinValue(limitReportDtoList, powerReportResponseHashMap, methodType);
             limitReportDtoList = meterRecordRepository.findAvgApparentPowerByCreateAt(sqlFormat, createAtString);
             assembleReportAvgValue(limitReportDtoList, powerReportResponseHashMap, methodType);
 
             //构造有功功率的数据
-            List<PowerReportResponse> powerReportResponseList = new ArrayList<>(limitReportDtoList.size());
-            for (String s : powerReportResponseHashMap.keySet()) {
-                powerReportResponseList.add(powerReportResponseHashMap.get(s));
-            }
+            List<PowerReportResponse> powerReportResponseList = this.processHashMapGetList(powerReportResponseHashMap);
             return RestResp.createBySuccess(powerReportResponseList);
         } catch (Exception e) {
             e.printStackTrace();
             return RestResp.createBy(RestResp.ERROR, "产生内部错误，来源：极值报表统计");
         }
+    }
+
+    @Override
+    public RestResp produceElectricCurrentLimitReport(long createAt, String createAtFormat, String sqlFormat) {
+        String createAtString = DateFormatUtil.formatDateTo(createAt, createAtFormat);
+        try {
+            // 响应对象和电表之间的索引，方便查找装载数据
+            HashMap<String, ElectricCurrentReportResponse> electricCurrentHashMap = new HashMap<>();
+            // 查找A相电流的最大值最小值平均值并填充
+            String methodType = "Ia";
+            List<LimitReportDto> limitReportDtoList = meterRecordRepository.findMaxIaByCreateAt(sqlFormat, createAtString);
+            assembleReportMaxValue(limitReportDtoList, electricCurrentHashMap, methodType, ElectricCurrentReportResponse.class);
+            limitReportDtoList = meterRecordRepository.findMinIaByCreateAt(sqlFormat, createAtString);
+            assembleReportMinValue(limitReportDtoList, electricCurrentHashMap, methodType);
+            limitReportDtoList = meterRecordRepository.findAvgIaByCreateAt(sqlFormat, createAtString);
+            assembleReportAvgValue(limitReportDtoList, electricCurrentHashMap, methodType);
+
+            // 查找B相电流的最大值最小值平均值并填充
+            methodType = "Ib";
+            limitReportDtoList = meterRecordRepository.findMaxIbByCreateAt(sqlFormat, createAtString);
+            assembleReportMaxValue(limitReportDtoList, electricCurrentHashMap, methodType, ElectricCurrentReportResponse.class);
+            limitReportDtoList = meterRecordRepository.findMinIbByCreateAt(sqlFormat, createAtString);
+            assembleReportMinValue(limitReportDtoList, electricCurrentHashMap, methodType);
+            limitReportDtoList = meterRecordRepository.findAvgIbByCreateAt(sqlFormat, createAtString);
+            assembleReportAvgValue(limitReportDtoList, electricCurrentHashMap, methodType);
+
+            // 查找C相电流的最大值最小值平均值并填充
+            methodType = "Ic";
+            limitReportDtoList = meterRecordRepository.findMaxIcByCreateAt(sqlFormat, createAtString);
+            assembleReportMaxValue(limitReportDtoList, electricCurrentHashMap, methodType, ElectricCurrentReportResponse.class);
+            limitReportDtoList = meterRecordRepository.findMinIcByCreateAt(sqlFormat, createAtString);
+            assembleReportMinValue(limitReportDtoList, electricCurrentHashMap, methodType);
+            limitReportDtoList = meterRecordRepository.findAvgIcByCreateAt(sqlFormat, createAtString);
+            assembleReportAvgValue(limitReportDtoList, electricCurrentHashMap, methodType);
+
+            //构造给前端的数据
+            List<ElectricCurrentReportResponse> electricCurrentList = this.processHashMapGetList(electricCurrentHashMap);
+            return RestResp.createBySuccess(electricCurrentList);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return RestResp.createBy(RestResp.ERROR, "产生内部错误，来源：极值报表统计");
+        }
+    }
+
+    @Override
+    public RestResp producePhaseVoltageLimitReport(long createAt, String createAtFormat, String sqlFormat) {
+        String createAtString = DateFormatUtil.formatDateTo(createAt, createAtFormat);
+        try {
+            // 响应对象和电表之间的索引，方便查找装载数据
+            HashMap<String, PhaseVoltageReportResponse> phaseVoltageReportHashMap = new HashMap<>();
+            // 查找A相电压的最大值最小值平均值并填充
+            String methodType = "Ua";
+            List<LimitReportDto> limitReportDtoList = meterRecordRepository.findMaxUaByCreateAt(sqlFormat, createAtString);
+            assembleReportMaxValue(limitReportDtoList, phaseVoltageReportHashMap, methodType, PhaseVoltageReportResponse.class);
+            limitReportDtoList = meterRecordRepository.findMinUaByCreateAt(sqlFormat, createAtString);
+            assembleReportMinValue(limitReportDtoList, phaseVoltageReportHashMap, methodType);
+            limitReportDtoList = meterRecordRepository.findAvgUaByCreateAt(sqlFormat, createAtString);
+            assembleReportAvgValue(limitReportDtoList, phaseVoltageReportHashMap, methodType);
+
+            // 查找B相电压的最大值最小值平均值并填充
+            methodType = "Ub";
+            limitReportDtoList = meterRecordRepository.findMaxUbByCreateAt(sqlFormat, createAtString);
+            assembleReportMaxValue(limitReportDtoList, phaseVoltageReportHashMap, methodType, PhaseVoltageReportResponse.class);
+            limitReportDtoList = meterRecordRepository.findMinUbByCreateAt(sqlFormat, createAtString);
+            assembleReportMinValue(limitReportDtoList, phaseVoltageReportHashMap, methodType);
+            limitReportDtoList = meterRecordRepository.findAvgUbByCreateAt(sqlFormat, createAtString);
+            assembleReportAvgValue(limitReportDtoList, phaseVoltageReportHashMap, methodType);
+
+            // 查找C相电压的最大值最小值平均值并填充
+            methodType = "Uc";
+            limitReportDtoList = meterRecordRepository.findMaxUcByCreateAt(sqlFormat, createAtString);
+            assembleReportMaxValue(limitReportDtoList, phaseVoltageReportHashMap, methodType, PhaseVoltageReportResponse.class);
+            limitReportDtoList = meterRecordRepository.findMinUcByCreateAt(sqlFormat, createAtString);
+            assembleReportMinValue(limitReportDtoList, phaseVoltageReportHashMap, methodType);
+            limitReportDtoList = meterRecordRepository.findAvgUcByCreateAt(sqlFormat, createAtString);
+            assembleReportAvgValue(limitReportDtoList, phaseVoltageReportHashMap, methodType);
+
+            //构造给前端的数据
+            List<PhaseVoltageReportResponse> electricCurrentList = this.processHashMapGetList(phaseVoltageReportHashMap);
+            return RestResp.createBySuccess(electricCurrentList);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return RestResp.createBy(RestResp.ERROR, "产生内部错误，来源：极值报表统计");
+        }
+    }
+
+    private <T> List<T> processHashMapGetList(HashMap<String, T> tHashMap) {
+        List<T> tList = new LinkedList<>();
+        for (String s : tHashMap.keySet()) {
+            tList.add(tHashMap.get(s));
+        }
+        return tList;
     }
 
     /**
@@ -492,50 +583,43 @@ public class MeterRecordService implements IMeterRecordService {
      * @throws IllegalAccessException
      * @throws InvocationTargetException
      */
-    private void assembleReportMaxValue(List<LimitReportDto> limitReportDtoList,
-                                        HashMap<String, PowerReportResponse> powerReportResponseHashMap,
-                                        String type) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    private <T> void assembleReportMaxValue(List<LimitReportDto> limitReportDtoList,
+                                            HashMap<String, T> powerReportResponseHashMap,
+                                            String type, Class<T> tClass) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        Constructor cla = tClass.getDeclaredConstructor(String.class, String.class);
         for (LimitReportDto limitReportDto : limitReportDtoList) {
-            PowerReportResponse powerReportResponse = powerReportResponseHashMap.get(limitReportDto.getMeter());
-            if (powerReportResponse == null) {
-                powerReportResponse = new PowerReportResponse();
+            T itemObj = powerReportResponseHashMap.get(limitReportDto.getMeter());
+            if (itemObj == null) {
+                itemObj = (T) cla.newInstance(limitReportDto.getMeter(), limitReportDto.getCreateAt().substring(0, 10));
             }
-            powerReportResponse.setMeter(limitReportDto.getMeter());
-            powerReportResponse.setCreateAt(limitReportDto.getCreateAt().substring(0, 10));
             String maxMethodName = "setMax" + type;
             AutoAssembleUtil
-                    .assembleBySpecifiedMethod(powerReportResponse, maxMethodName, limitReportDto.getLimitValue());
+                    .assembleBySpecifiedMethod(itemObj, maxMethodName, limitReportDto.getLimitValue());
             maxMethodName = "setMax" + type + "CreateAt";
             AutoAssembleUtil
-                    .assembleBySpecifiedMethod(powerReportResponse, maxMethodName, limitReportDto.getCreateAt());
-            powerReportResponseHashMap.put(limitReportDto.getMeter(), powerReportResponse);
+                    .assembleBySpecifiedMethod(itemObj, maxMethodName, limitReportDto.getCreateAt());
+            powerReportResponseHashMap.put(limitReportDto.getMeter(), itemObj);
         }
     }
 
-    private void assembleReportMinValue(List<LimitReportDto> limitReportDtoList,
-                                        HashMap<String, PowerReportResponse> powerReportResponseHashMap,
-                                        String type) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    private <T> void assembleReportMinValue(List<LimitReportDto> limitReportDtoList,
+                                            HashMap<String, T> powerReportResponseHashMap,
+                                            String type) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         for (LimitReportDto limitReportDto : limitReportDtoList) {
-            PowerReportResponse powerReportResponse = powerReportResponseHashMap.get(limitReportDto.getMeter());
-            if (powerReportResponse == null) {
-                powerReportResponse = new PowerReportResponse();
-            }
+            T itemObj = powerReportResponseHashMap.get(limitReportDto.getMeter());
             AutoAssembleUtil
-                    .assembleBySpecifiedMethod(powerReportResponse, "setMin" + type, limitReportDto.getLimitValue());
+                    .assembleBySpecifiedMethod(itemObj, "setMin" + type, limitReportDto.getLimitValue());
             AutoAssembleUtil
-                    .assembleBySpecifiedMethod(powerReportResponse, "setMin" + type + "CreateAt", limitReportDto.getCreateAt());
+                    .assembleBySpecifiedMethod(itemObj, "setMin" + type + "CreateAt", limitReportDto.getCreateAt());
         }
     }
 
-    private void assembleReportAvgValue(List<LimitReportDto> limitReportDtoList,
-                                        HashMap<String, PowerReportResponse> powerReportResponseHashMap,
-                                        String type) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    private <T> void assembleReportAvgValue(List<LimitReportDto> limitReportDtoList,
+                                            HashMap<String, T> powerReportResponseHashMap,
+                                            String type) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         for (LimitReportDto limitReportDto : limitReportDtoList) {
-            PowerReportResponse powerReportResponse = powerReportResponseHashMap.get(limitReportDto.getMeter());
-            if (powerReportResponse == null) {
-                powerReportResponse = new PowerReportResponse();
-            }
-            AutoAssembleUtil.assembleBySpecifiedMethod(powerReportResponse, "setAvg" + type, limitReportDto.getLimitValue());
+            T itemObj = powerReportResponseHashMap.get(limitReportDto.getMeter());
+            AutoAssembleUtil.assembleBySpecifiedMethod(itemObj, "setAvg" + type, limitReportDto.getLimitValue());
         }
     }
 

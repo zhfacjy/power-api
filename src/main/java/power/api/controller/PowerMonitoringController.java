@@ -127,6 +127,14 @@ public class PowerMonitoringController {
             case "power":
                 restResp = iMeterRecordService.producePowerLimitReport(createAt, dateFormat, sqlDateFormat);
                 break;
+            case "electric_current":
+                restResp = iMeterRecordService.produceElectricCurrentLimitReport(createAt, dateFormat, sqlDateFormat);
+                break;
+            case "phase_voltage":
+                restResp = iMeterRecordService.producePhaseVoltageLimitReport(createAt, dateFormat, sqlDateFormat);
+                break;
+            case "line_voltage":
+                break;
             default:
                 restResp = RestResp.createBy(RestResp.PARAM_ERROR, "参数错误");
         }
