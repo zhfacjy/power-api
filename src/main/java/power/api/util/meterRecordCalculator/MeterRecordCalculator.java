@@ -177,11 +177,20 @@ import power.api.model.MeterRecord;
      }
 
 
+     /**
+      * @param meterRecord
+      * @return 电流三相不平衡度
+      */
      public static  float countCurrentThreePhaseUnbalanced(MeterRecord meterRecord) {
         return instance.countThreePhaseUnbalanced(instance.maxOfThreeNums(meterRecord.getIa(),meterRecord.getIb(),meterRecord.getIc())
                 ,instance.averageOfThreeNums(meterRecord.getIa(),meterRecord.getIb(),meterRecord.getIc()));
 
     }
+
+     /**
+      * @param meterRecord
+      * @return 电压三相不平衡度
+      */
      public static  float countVoltageThreePhaseUnbalanced(MeterRecord meterRecord) {
         return instance.countThreePhaseUnbalanced(instance.maxOfThreeNums(meterRecord.getUa(),meterRecord.getUb(),meterRecord.getUc())
                 ,instance.averageOfThreeNums(meterRecord.getUa(),meterRecord.getUb(),meterRecord.getUc()));
