@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import power.api.controller.paramModel.GetElectricDataParam;
 import power.api.common.RestResp;
+import power.api.controller.paramModel.GetLimitReportParam;
 import power.api.controller.paramModel.GetRunningReportParam;
 import power.api.service.IMeterRecordService;
 
@@ -96,6 +97,20 @@ public class PowerMonitoringController {
                 break;
             case "all":
                 restResp = RestResp.createBy(RestResp.INVISIBLE, "开发中...");
+                break;
+            default:
+                restResp = RestResp.createBy(RestResp.PARAM_ERROR, "参数错误");
+        }
+        return restResp;
+    }
+
+    @PostMapping("/limit/report/{createAt}")
+    public RestResp getLimitValueReport(@ApiParam("指定日期（时间戳）") @PathVariable Long createAt,
+                                        @RequestBody GetLimitReportParam getLimitReportParam) {
+        RestResp restResp = null;
+        switch (getLimitReportParam.getReportType()) {
+            case "power":
+                restResp = iMeterRecordService.produceActivePowerLimitReport(createAt);
                 break;
             default:
                 restResp = RestResp.createBy(RestResp.PARAM_ERROR, "参数错误");

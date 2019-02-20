@@ -3,6 +3,7 @@ package power.api.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import power.api.dto.LimitReportDto;
 import power.api.dto.MaxAvgMinDto;
 import power.api.dto.PhaseVoltageReportDto;
 import power.api.model.MeterRecord;
@@ -73,4 +74,47 @@ public interface MeterRecordRepository extends JpaRepository<MeterRecord, Intege
     List<PhaseVoltageReportDto> findByCreateAtInterval(@Param("startAt") Timestamp startAt,
                                                        @Param("endAt") Timestamp endAt,
                                                        @Param("minuteInterval") int minuteInterval);
+
+    @Query(value = "SELECT " +
+            "  m1.meter        AS                             meter, " +
+            "  m1.active_power AS                             limitValue, " +
+            "  DATE_FORMAT(m1.create_at, '%Y-%m-%d %H:%i:%S') createAt " +
+            "FROM meter_record AS m1 INNER JOIN ( " +
+            "                                     SELECT " +
+            "                                       meter, " +
+            "                                       MAX(active_power) AS max_active_power " +
+            "                                     FROM meter_record " +
+            "                                     WHERE create_at >= :startAt " +
+            "                                           AND create_at < :endAt " +
+            "                                     GROUP BY meter " +
+            "                                   ) AS m2 ON m1.meter = m2.meter AND m1.active_power = m2.max_active_power;", nativeQuery = true)
+    List<LimitReportDto> getMaxActivePowerByCreateAt(@Param("startAt") Timestamp startAt,
+                                                     @Param("endAt") Timestamp endAt);
+
+    @Query(value = "SELECT " +
+            "  m1.meter        AS                             meter, " +
+            "  m1.active_power AS                             limitValue, " +
+            "  DATE_FORMAT(m1.create_at, '%Y-%m-%d %H:%i:%S') createAt " +
+            "FROM meter_record AS m1 INNER JOIN ( " +
+            "                                     SELECT " +
+            "                                       meter, " +
+            "                                       MIN(active_power) AS max_active_power " +
+            "                                     FROM meter_record " +
+            "                                     WHERE create_at >= :startAt " +
+            "                                           AND create_at < :endAt " +
+            "                                     GROUP BY meter " +
+            "                                   ) AS m2 ON m1.meter = m2.meter AND m1.active_power = m2.max_active_power;", nativeQuery = true)
+    List<LimitReportDto> getMinActivePowerByCreateAt(@Param("startAt") Timestamp startAt,
+                                                     @Param("endAt") Timestamp endAt);
+
+    @Query(value = "SELECT " +
+            "  meter, " +
+            "  AVG(active_power)                  AS limitValue, " +
+            "  DATE_FORMAT(create_at, '%Y-%m-%d') AS createAt " +
+            "FROM meter_record " +
+            "WHERE create_at >= :startAt " +
+            "      AND create_at < :endAt " +
+            "GROUP BY meter;", nativeQuery = true)
+    List<LimitReportDto> getAvgActivePowerByCreateAt(@Param("startAt") Timestamp startAt,
+                                                     @Param("endAt") Timestamp endAt);
 }

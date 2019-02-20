@@ -54,4 +54,6 @@ public interface IMeterRecordService {
     RestResp countActivePowerMaxAvgMin(long startAt, long endAt);
 
     RestResp producePhaseVoltageReport(long createAt, int minuteInterval);
+
+    RestResp produceActivePowerLimitReport(long createAt);
 }

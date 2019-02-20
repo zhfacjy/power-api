@@ -5,8 +5,10 @@ import org.springframework.stereotype.Service;
 import power.api.common.RestResp;
 import power.api.controller.paramModel.GetElectricDataParam;
 import power.api.controller.responseModel.powerMonitoring.*;
+import power.api.controller.responseModel.powerMonitoring.limitReport.PowerReportResponse;
 import power.api.controller.responseModel.powerMonitoring.runningReport.PhaseReportItem;
 import power.api.controller.responseModel.powerMonitoring.runningReport.ReportResponse;
+import power.api.dto.LimitReportDto;
 import power.api.dto.MaxAvgMinDto;
 import power.api.dto.PhaseVoltageReportDto;
 import power.api.model.MeterRecord;
@@ -17,6 +19,7 @@ import power.api.service.impl.DataWrapperClassHolder.LineVoltageHolder;
 import power.api.service.impl.DataWrapperClassHolder.PhaseHolder;
 import power.api.util.AutoAssembleUtil;
 import power.api.util.PaddingTimeUtil;
+import power.api.util.meterRecordCalculator.MeterRecordCalculator;
 
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Timestamp;
@@ -25,9 +28,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by 浩发 on 2019/2/4 13:46
@@ -237,21 +238,23 @@ public class MeterRecordService implements IMeterRecordService {
         LineVoltageHolder lineVoltageHolder = new LineVoltageHolder();
 
         for (MeterRecord m : meterRecordList) {
-            lineVoltageHolder.setUab((float) (Math.sqrt(Math.pow(m.getVa(), 2)
-                    + Math.pow(m.getVb(), 2)
-                    - 2 * m.getVa() * m.getVb() * Math.cos(Math.PI * 2 / 3))));
+//            lineVoltageHolder.setUab((float) (Math.sqrt(Math.pow(m.getVa(), 2)
+//                    + Math.pow(m.getVb(), 2)
+//                    - 2 * m.getVa() * m.getVb() * Math.cos(Math.PI * 2 / 3))));
+//
+//            lineVoltageHolder.setUbc((float) (Math.sqrt(Math.pow(m.getVb(), 2)
+//                    + Math.pow(m.getVc(), 2)
+//                    - 2 * m.getVb() * m.getVc() * Math.cos(Math.PI * 2 / 3))));
+//
+//            lineVoltageHolder.setUca((float) (Math.sqrt(Math.pow(m.getVc(), 2)
+//                    + Math.pow(m.getVa(), 2)
+//                    - 2 * m.getVc() * m.getVa() * Math.cos(Math.PI * 2 / 3))));
 
-            lineVoltageHolder.setUbc((float) (Math.sqrt(Math.pow(m.getVb(), 2)
-                    + Math.pow(m.getVc(), 2)
-                    - 2 * m.getVb() * m.getVc() * Math.cos(Math.PI * 2 / 3))));
-
-            lineVoltageHolder.setUca((float) (Math.sqrt(Math.pow(m.getVc(), 2)
-                    + Math.pow(m.getVa(), 2)
-                    - 2 * m.getVc() * m.getVa() * Math.cos(Math.PI * 2 / 3))));
-
+            lineVoltageHolder.setUab(MeterRecordCalculator.countLineVoltageUab(m));
+            lineVoltageHolder.setUbc(MeterRecordCalculator.countLineVoltageUbc(m));
+            lineVoltageHolder.setUca(MeterRecordCalculator.countLineVoltageUca(m));
 
             LineVoltageResponse lineVoltageResponse = new LineVoltageResponse();
-
             lineVoltageResponse.setCreateAt(m.getCreateAt());
             lineVoltageResponse.setUab(lineVoltageHolder.getUab());
             lineVoltageResponse.setUbc(lineVoltageHolder.getUbc());
@@ -429,6 +432,60 @@ public class MeterRecordService implements IMeterRecordService {
         }
         return RestResp.createBySuccess(reportItemList);
     }
+
+    /**
+     * 功率极值-日报
+     *
+     * @param createAt
+     * @return
+     */
+    @Override
+    public RestResp produceActivePowerLimitReport(long createAt) {
+        long endAt = createAt + this.getRemainMillisSecondsOneDay(createAt);
+
+        Timestamp start = new Timestamp(createAt);
+        Timestamp end = new Timestamp(endAt);
+        // 查找有功功率的最大值
+        List<LimitReportDto> limitReportDtoList = meterRecordRepository.getMaxActivePowerByCreateAt(start, end);
+        if (limitReportDtoList.isEmpty()) {
+            return RestResp.createBySuccess();
+        }
+        // 响应对象和电表之间的索引，方便查找装载数据
+        HashMap<String, PowerReportResponse> powerReportResponseHashMap = new HashMap<>();
+        // 填充找到的最大值
+        for (LimitReportDto limitReportDto : limitReportDtoList) {
+            PowerReportResponse powerReportResponse = new PowerReportResponse();
+            powerReportResponse.setMeter(limitReportDto.getMeter());
+            powerReportResponse.setMaxValue(limitReportDto.getLimitValue());
+            powerReportResponse.setCreateAt(limitReportDto.getCreateAt().substring(0, 10));
+            powerReportResponse.setMaxValueCreateAt(limitReportDto.getCreateAt());
+            powerReportResponseHashMap.put(limitReportDto.getMeter(), powerReportResponse);
+        }
+        // 查找有功功率的最小值
+        limitReportDtoList = meterRecordRepository.getMinActivePowerByCreateAt(start, end);
+        // 填充找到的最小值
+        for (LimitReportDto limitReportDto : limitReportDtoList) {
+            // 获取之前放入索引的对象
+            PowerReportResponse powerReportResponse = powerReportResponseHashMap.get(limitReportDto.getMeter());
+            powerReportResponse.setMinValue(limitReportDto.getLimitValue());
+            powerReportResponse.setMinValueCreateAt(limitReportDto.getCreateAt());
+        }
+        // 查找有功功率的平均值
+        limitReportDtoList = meterRecordRepository.getAvgActivePowerByCreateAt(start, end);
+        // 填充找到的平均值
+        for (LimitReportDto limitReportDto : limitReportDtoList) {
+            // 获取之前放入索引的对象
+            PowerReportResponse powerReportResponse = powerReportResponseHashMap.get(limitReportDto.getMeter());
+            powerReportResponse.setAvgValue(limitReportDto.getLimitValue());
+        }
+        //构造有功功率的数据
+        List<PowerReportResponse> powerReportResponseList = new ArrayList<>(limitReportDtoList.size());
+        for (String s : powerReportResponseHashMap.keySet()) {
+            powerReportResponseList.add(powerReportResponseHashMap.get(s));
+        }
+        return RestResp.createBySuccess(powerReportResponseList);
+    }
+
 
     private long getRemainMillisSecondsOneDay(long currentTimestamp) {
         LocalDateTime midnight = LocalDateTime.ofInstant(Instant.ofEpochMilli(currentTimestamp),
