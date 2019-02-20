@@ -2,6 +2,14 @@ package power.api.util.meterRecordCalculator;
 
 import power.api.model.MeterRecord;
 
+/**
+ * 这个接口类用于实现需要计算的方法接口，继承自IMeterRecordCalculator接口类
+ * <p>
+ * 增加计算方法的步骤：
+ * 1.在接口类IMeterRecordCalculator添加一个接口
+ * 2.在当前类实现该接口
+ * 3.在当前类的底部增加static方法，通过instance调用这些接口
+ */
 public class MeterRecordCalculator implements IMeterRecordCalculator {
 
     private static MeterRecordCalculator instance = null;
