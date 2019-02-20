@@ -38,6 +38,11 @@ public class AutoAssembleUtil {
         }
     }
 
+    public static <T> void assembleBySpecifiedMethod(Object o, String methodName, T value) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Method method = o.getClass().getDeclaredMethod(methodName, value.getClass());
+        method.invoke(o, value);
+    }
+
     private static HashMap<String, Object> produceFieldCache(Object o) throws IllegalAccessException, InvocationTargetException {
         HashMap<String, Object> fieldHashMap = new HashMap<>();
         Method[] methods = o.getClass().getDeclaredMethods();
