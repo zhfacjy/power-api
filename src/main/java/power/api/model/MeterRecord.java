@@ -48,9 +48,9 @@ public class MeterRecord extends CommModel implements Serializable {
                 ", meter='" + meter + '\'' +
                 ", command='" + command + '\'' +
                 ", earlyWarning='" + earlyWarning + '\'' +
-                ", va=" + ua +
-                ", vb=" + ub +
-                ", vc=" + uc +
+                ", ua=" + ua +
+                ", ub=" + ub +
+                ", uc=" + uc +
                 ", ia=" + ia +
                 ", ib=" + ib +
                 ", ic=" + ic +

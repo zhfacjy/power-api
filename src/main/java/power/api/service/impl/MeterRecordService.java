@@ -102,10 +102,10 @@ public class MeterRecordService implements IMeterRecordService {
         List<ApparentPowerResponse> apparentPowerResponsesList = new ArrayList<>(meterRecordList.size());
 
         /**
-         * factor = power / (ia * va + ib * vb + ic * vc)
-         * pa = ia * va * factor
-         * pb = ib * vb * factor
-         * pc = ic * vc * factor
+         * factor = power / (ia * ua + ib * ub + ic * uc)
+         * pa = ia * ua * factor
+         * pb = ib * ub * factor
+         * pc = ic * uc * factor
          */
         PhaseHolder apparentPowerHolder = new PhaseHolder();
         for (MeterRecord m : meterRecordList) {
