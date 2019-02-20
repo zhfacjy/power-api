@@ -299,7 +299,7 @@ public class MeterRecordService implements IMeterRecordService {
 
         for (MeterRecord m : meterRecordList) {
             ReactivePowerResponse reactivePowerResponse = new ReactivePowerResponse();
-            //TODO 暂时性使用这个方法
+            //暂时性使用这个方法
             reactivePowerResponse.setReactivePowerTotal(MeterRecordCalculator.countReactivePowerTotalTest(m));
 
 
