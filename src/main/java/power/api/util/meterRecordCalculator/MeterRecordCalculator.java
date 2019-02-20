@@ -23,6 +23,7 @@ public class MeterRecordCalculator implements IMeterRecordCalculator {
     public float countReactivePower(MeterRecord mr, Boolean three) {
         if (!three) {
             float apparentPowerTotal = this.countApparentPower(mr);
+
             return (float) (apparentPowerTotal * (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(mr.getActivePower() / apparentPowerTotal)))));
         } else {
             return 0;
@@ -32,7 +33,7 @@ public class MeterRecordCalculator implements IMeterRecordCalculator {
     @Override
     public float countApparentPower(MeterRecord mr, Boolean three) {
         if (!three) {
-            return (mr.getVa() + mr.getVb() + mr.getVc()) * (mr.getIa() + mr.getIb() + mr.getIc());
+            return mr.getVa()* mr.getIa() + mr.getVb()* mr.getIb() + mr.getVc()* mr.getIc();
         } else {
             return 0;
         }
