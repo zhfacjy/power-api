@@ -64,7 +64,8 @@ public class MeterRecordCalculator implements IMeterRecordCalculator {
 
     @Override
     public float countLineVoltage(double arg1, double arg2) {
-        return (float) (Math.sqrt(Math.pow(arg1, 2) + Math.pow(arg2, 2) - 2 * arg1 * arg2 * Math.cos(Math.PI * 2 / 3)));
+        return (float) (Math.sqrt(Math.pow(arg1, 2) + Math.pow(arg2, 2) - 2 * arg1 * arg2) * Math.cos(Math.PI * 2 / 3));
+
     }
 
 
