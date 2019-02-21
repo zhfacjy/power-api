@@ -22,15 +22,39 @@ public class PowerAnalysisController {
     @Autowired
     private IPowerAnalysisService powerAnalysisService;
 
+    /**
+     * 用能分析
+     * @param createAt
+     * @param dataType
+     * @return
+     */
     @GetMapping("/power/{dataType}/{createAt}")
-    public RestResp getElectricDataInADay(@ApiParam("日期（字符串类型:yyyyMMdd）") @PathVariable String createAt,
+    public RestResp getElectricDataInADay(@ApiParam("日期（根据日期类型的字符串类型: 1:yyyyMMdd 2:yyyyMM 3:yyyy）") @PathVariable String createAt,
                                           @ApiParam("日期类型（3.年、2.月、1.日）") @PathVariable Integer dataType) {
         return RestResp.createBySuccess(powerAnalysisService.getPowerAnalysis(dataType, createAt));
     }
 
+    /**
+     * 同比分析
+     * @param centralNode
+     * @return
+     */
     @GetMapping("/power/yearOnYear/{centralNode}")
     public RestResp yearOnYear(@ApiParam("中心节点（默认传04）") @PathVariable String centralNode) {
         return RestResp.createBySuccess(powerAnalysisService.yearOnYear(centralNode));
+    }
+
+    /**
+     * 环比分析
+     * @param createAt
+     * @param dataType
+     * @return
+     */
+    @GetMapping("/power/monthOnMonth/{centralNode}/{dataType}/{createAt}")
+    public RestResp monthOnMonth(@ApiParam("日期（字符串类型:yyyyMMdd）") @PathVariable String createAt,
+                                 @ApiParam("日期类型（3.年、2.月、1.日）") @PathVariable Integer dataType,
+                                 @ApiParam("中心节点（默认传04）") @PathVariable String centralNode) {
+        return RestResp.createBySuccess(powerAnalysisService.monthOnMonth(centralNode,dataType,createAt));
     }
 
 }

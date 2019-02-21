@@ -12,4 +12,5 @@ public interface IPowerAnalysisService {
 
     JSONObject yearOnYear(String centralNode);
 
+    JSONObject monthOnMonth(String centralNode,Integer dataType, String createAt);
 }
