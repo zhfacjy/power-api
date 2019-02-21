@@ -25,13 +25,13 @@ public class PowerAnalysisController {
     /**
      * 用能分析
      * @param createAt
-     * @param dataType
+     * @param dateType
      * @return
      */
-    @GetMapping("/power/{dataType}/{createAt}")
+    @GetMapping("/power/{dateType}/{createAt}")
     public RestResp getElectricDataInADay(@ApiParam("日期（根据日期类型的字符串类型: 1:yyyyMMdd 2:yyyyMM 3:yyyy）") @PathVariable String createAt,
-                                          @ApiParam("日期类型（3.年、2.月、1.日）") @PathVariable Integer dataType) {
-        return RestResp.createBySuccess(powerAnalysisService.getPowerAnalysis(dataType, createAt));
+                                          @ApiParam("日期类型（3.年、2.月、1.日）") @PathVariable Integer dateType) {
+        return RestResp.createBySuccess(powerAnalysisService.getPowerAnalysis(dateType, createAt));
     }
 
     /**
@@ -47,14 +47,26 @@ public class PowerAnalysisController {
     /**
      * 环比分析
      * @param createAt
-     * @param dataType
+     * @param dateType
      * @return
      */
-    @GetMapping("/power/monthOnMonth/{centralNode}/{dataType}/{createAt}")
+    @GetMapping("/power/monthOnMonth/{centralNode}/{dateType}/{createAt}")
     public RestResp monthOnMonth(@ApiParam("日期（字符串类型:yyyyMMdd）") @PathVariable String createAt,
-                                 @ApiParam("日期类型（3.年、2.月、1.日）") @PathVariable Integer dataType,
+                                 @ApiParam("日期类型（3.年、2.月、1.日）") @PathVariable Integer dateType,
                                  @ApiParam("中心节点（默认传04）") @PathVariable String centralNode) {
-        return RestResp.createBySuccess(powerAnalysisService.monthOnMonth(centralNode,dataType,createAt));
+        return RestResp.createBySuccess(powerAnalysisService.monthOnMonth(centralNode,dateType,createAt));
+    }
+
+    /**
+     * 电能抄集
+     * @param beginDate
+     * @param endDate
+     * @return
+     */
+    @GetMapping("/power/collection/{beginDate}/{endDate}")
+    public RestResp getCollection(@ApiParam("开始日期（字符串类型:yyyyMMddHHmm）") @PathVariable String beginDate,
+                                  @ApiParam("结束日期（字符串类型:yyyyMMddHHmm）") @PathVariable String endDate) {
+        return RestResp.createBySuccess(powerAnalysisService.getCollection(beginDate,endDate));
     }
 
 }

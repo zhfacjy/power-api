@@ -8,9 +8,11 @@ import com.alibaba.fastjson.JSONObject;
  */
 public interface IPowerAnalysisService {
 
-    JSONObject getPowerAnalysis(Integer dataType, String createAt);
+    JSONObject getPowerAnalysis(Integer dateType, String createAt);
 
     JSONObject yearOnYear(String centralNode);
 
-    JSONObject monthOnMonth(String centralNode,Integer dataType, String createAt);
+    JSONObject monthOnMonth(String centralNode,Integer dateType, String createAt);
+
+    JSONObject getCollection(String beginDate,String endDate);
 }

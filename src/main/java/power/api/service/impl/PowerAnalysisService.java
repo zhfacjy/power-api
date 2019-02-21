@@ -27,13 +27,13 @@ public class PowerAnalysisService implements IPowerAnalysisService {
     private EntityManager em;
 
     @Override
-    public JSONObject getPowerAnalysis(Integer dataType, String createAt) {
+    public JSONObject getPowerAnalysis(Integer dateType, String createAt) {
         JSONObject result = new JSONObject();
         Query query;
         SimpleDateFormat sdf;
         SimpleDateFormat sdf2;
         // 日报
-        if (dataType == 1) {
+        if (dateType == 1) {
             sdf = new SimpleDateFormat("yyyyMMdd");
             Integer today = Integer.valueOf(sdf.format(new Date()));
             Integer paramData = Integer.valueOf(createAt);
@@ -50,7 +50,7 @@ public class PowerAnalysisService implements IPowerAnalysisService {
                 times = Integer.valueOf(sdf2.format(new Date()));
             }
             // 查询当前时间的所用电能
-            String findEnergy = "select max(electric_energy) - min(electric_energy) as energy,meter,DATE_FORMAT(create_at,'%H') as hours " +
+            String findEnergy = "select truncate(max(electric_energy) - min(electric_energy),2) as energy,meter,DATE_FORMAT(create_at,'%H') as hours " +
                     "from meter_record where DATE_FORMAT(create_at,'%Y%m%d') = ?1 GROUP BY meter,DATE_FORMAT(create_at,'%H')";
             query = em.createNativeQuery(findEnergy);
             query.setParameter(1,createAt);
@@ -77,7 +77,7 @@ public class PowerAnalysisService implements IPowerAnalysisService {
                 }
             }
         // 月报
-        } else if (dataType == 2) {
+        } else if (dateType == 2) {
             sdf = new SimpleDateFormat("yyyyMM");
             Integer today = Integer.valueOf(sdf.format(new Date()));
             Integer paramData = Integer.valueOf(createAt);
@@ -98,7 +98,7 @@ public class PowerAnalysisService implements IPowerAnalysisService {
                 times = Integer.valueOf(sdf2.format(new Date()));
             }
             // 查询当前时间的所用电能
-            String findEnergy = "select max(electric_energy) - min(electric_energy) as energy,meter,DATE_FORMAT(create_at,'%d') as days " +
+            String findEnergy = "select truncate(max(electric_energy) - min(electric_energy),2) as energy,meter,DATE_FORMAT(create_at,'%d') as days " +
                     "from meter_record where DATE_FORMAT(create_at,'%Y%m') = ?1 GROUP BY meter,DATE_FORMAT(create_at,'%d')";
             query = em.createNativeQuery(findEnergy);
             query.setParameter(1,createAt);
@@ -140,7 +140,7 @@ public class PowerAnalysisService implements IPowerAnalysisService {
                 times = Integer.valueOf(sdf2.format(new Date()));
             }
             // 查询当年的所用电能
-            String findEnergy = "select max(electric_energy) - min(electric_energy) as energy,meter,DATE_FORMAT(create_at,'%m') as months " +
+            String findEnergy = "select truncate(max(electric_energy) - min(electric_energy),2) as energy,meter,DATE_FORMAT(create_at,'%m') as months " +
                     "from meter_record where DATE_FORMAT(create_at,'%Y') = ?1 GROUP BY meter,DATE_FORMAT(create_at,'%m')";
             query = em.createNativeQuery(findEnergy);
             query.setParameter(1,createAt);
@@ -242,7 +242,7 @@ public class PowerAnalysisService implements IPowerAnalysisService {
     }
 
     @Override
-    public JSONObject monthOnMonth(String centralNode,Integer dataType, String createAt) {
+    public JSONObject monthOnMonth(String centralNode,Integer dateType, String createAt) {
         JSONObject result = new JSONObject();
         Query query;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
@@ -251,7 +251,7 @@ public class PowerAnalysisService implements IPowerAnalysisService {
         Integer paramData = Integer.valueOf(createAt);
 
         // 按日环比
-        if (dataType == 1) {
+        if (dateType == 1) {
             calendar.add(Calendar.DATE, 1);
             Integer tomorrow = Integer.valueOf(sdf.format(calendar.getTime()));
             // 如果比明天还大的日期，2天都为0
@@ -280,7 +280,7 @@ public class PowerAnalysisService implements IPowerAnalysisService {
             // 如果某一天的值丢失了，也得显示有值的一天
             result = lastAndCurrent(yesterDay,todayDay,result,centralNode);
         // 按周环比
-        } else if (dataType == 2) {
+        } else if (dateType == 2) {
             // 获取下周周日
             int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
             int nextMondayOffset = dayOfWeek == 1 ? 7 : 15 - dayOfWeek;
@@ -354,6 +354,43 @@ public class PowerAnalysisService implements IPowerAnalysisService {
             JSONArray lastMonth = JSONArray.parseArray(JSON.toJSONString(query.getResultList()));
             // 如果某一个月的值丢失了，也得显示有值的一个月
             result = lastAndCurrent(lastMonth,currentMonth,result,centralNode);
+        }
+        return result;
+    }
+
+    @Override
+    public JSONObject getCollection(String beginDate, String endDate) {
+        JSONObject result = new JSONObject();
+        String findEnergy = "select truncate(max(electric_energy),2) as energy,meter from meter_record " +
+                "where DATE_FORMAT(create_at,'%Y%m%d%H%i') = ?1 GROUP BY meter";
+        Query query = em.createNativeQuery(findEnergy);
+        query.setParameter(1,beginDate);
+        query.unwrap(NativeQueryImpl.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
+        JSONArray beginEnergy = JSONArray.parseArray(JSON.toJSONString(query.getResultList()));
+        query.setParameter(1,endDate);
+        JSONArray endEnergy = JSONArray.parseArray(JSON.toJSONString(query.getResultList()));
+        if (beginEnergy.size()>0&&endEnergy.size()>0) {
+            for (int i=0;i<beginEnergy.size();i++) {
+                JSONObject begin = beginEnergy.getJSONObject(i);
+                Double energy1 = 0.0;
+                for (int j=0;j<endEnergy.size();j++) {
+                    if (begin.getString("meter").equals(endEnergy.getJSONObject(j).getString("meter"))) {
+                        energy1 = endEnergy.getJSONObject(j).getDouble("energy");
+                        break;
+                    }
+                }
+                JSONObject object = new JSONObject();
+                object.put("beginEnergy",begin.getDouble("energy"));
+                object.put("endEnergy",energy1);
+                object.put("different",energy1-begin.getDouble("energy"));
+                result.put(object.getString("meter"),object);
+            }
+        } else if (beginEnergy.size()==0&&endEnergy.size()==0) {
+            collectionDefault(result);
+        } else if (beginEnergy.size()>0&&endEnergy.size()==0) {
+            setNullValue(result,beginEnergy,true);
+        } else {
+            setNullValue(result,endEnergy,false);
         }
         return result;
     }
@@ -477,6 +514,39 @@ public class PowerAnalysisService implements IPowerAnalysisService {
             }
         }
         return 0.0;
+    }
+
+    // 电能抄集无数据情况下的默认值
+    private void collectionDefault(JSONObject result) {
+        String findMeter = "select distinct meter from meter_record";
+        Query query = em.createNativeQuery(findMeter);
+        List<String> meters = query.getResultList();
+        for (String meter : meters) {
+            JSONObject object = new JSONObject();
+            object.put("beginEnergy",0);
+            object.put("endEnergy",0);
+            object.put("different",0);
+            result.put(meter,object);
+        }
+    }
+
+    // 电能抄集某一时间段无数据情况下的默认值
+    private void setNullValue(JSONObject result,JSONArray times,boolean isBegin) {
+        for (int i=0;i<times.size();i++) {
+            JSONObject energy = times.getJSONObject(i);
+            JSONObject object = new JSONObject();
+            if (isBegin) {
+                object.put("beginEnergy",energy.getDouble("energy"));
+                object.put("endEnergy",0);
+                object.put("different",0);
+                result.put(object.getString("meter"),object);
+            } else {
+                object.put("beginEnergy",0);
+                object.put("endEnergy",energy.getDouble("energy"));
+                object.put("different",energy.getDouble("energy"));
+                result.put(object.getString("meter"),object);
+            }
+        }
     }
 
 }
