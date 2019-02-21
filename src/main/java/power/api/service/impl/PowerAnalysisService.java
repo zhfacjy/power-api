@@ -396,7 +396,7 @@ public class PowerAnalysisService implements IPowerAnalysisService {
         return result;
     }
 
-    // 同比分析日期大于明天时间的默认值
+    // 环比分析日期大于明天时间的默认值
     private JSONObject getDefault2(String centralNode,JSONObject result) {
         String findMeter = "select distinct meter from meter_record where central_node = ?1";
         Query query = em.createNativeQuery(findMeter);
@@ -413,7 +413,7 @@ public class PowerAnalysisService implements IPowerAnalysisService {
         return result;
     }
 
-    // 同比分析的缺省判断
+    // 环比比分析的缺省判断
     private JSONObject lastAndCurrent(JSONArray lastDays,JSONArray currentDays,JSONObject result,String centralNode) {
         if (lastDays.size()>0&&currentDays.size()>0) {
             for (int i=0;i<currentDays.size();i++) {
@@ -447,7 +447,7 @@ public class PowerAnalysisService implements IPowerAnalysisService {
         return result;
     }
 
-    // 同比分析某一天缺省的赋值
+    // 环比分析某一天缺省的赋值
     private void setValue(JSONObject result,JSONArray days,Boolean isCurrent) {
         for (int i=0;i<days.size();i++) {
             JSONObject object = days.getJSONObject(i);
