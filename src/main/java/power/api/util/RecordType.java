@@ -23,5 +23,7 @@ public class RecordType {
     public final static String UserIdDictPatrolGroupId = "user_id__dict_patrol_group_id";
     // 计划的执行成员
     public final static String UserIdAndPatrolPlanId = "user_id__patrol_plan_id";
+    // 越限事件
+    public final static String OverLimitEvent = "over_limit_event";
 
 }
