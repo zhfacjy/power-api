@@ -1,5 +1,6 @@
 package power.api.service;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
 /**
@@ -8,11 +9,11 @@ import com.alibaba.fastjson.JSONObject;
  */
 public interface IPowerAnalysisService {
 
-    JSONObject getPowerAnalysis(Integer dateType, String createAt);
+    JSONArray getPowerAnalysis(Integer dateType, String createAt);
 
     JSONObject yearOnYear(String centralNode);
 
-    JSONObject monthOnMonth(String centralNode,Integer dateType, String createAt);
+    JSONArray monthOnMonth(String centralNode,Integer dateType, String createAt);
 
-    JSONObject getCollection(String beginDate,String endDate);
+    JSONArray getCollection(String beginDate,String endDate);
 }

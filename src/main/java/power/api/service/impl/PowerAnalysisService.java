@@ -12,10 +12,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by 浩发 on 2019/2/17 17:31
@@ -27,11 +24,13 @@ public class PowerAnalysisService implements IPowerAnalysisService {
     private EntityManager em;
 
     @Override
-    public JSONObject getPowerAnalysis(Integer dateType, String createAt) {
-        JSONObject result = new JSONObject();
+    public JSONArray getPowerAnalysis(Integer dateType, String createAt) {
+        JSONArray result = new JSONArray();
         Query query;
         SimpleDateFormat sdf;
         SimpleDateFormat sdf2;
+        HashMap<String,Integer> hasExists = new HashMap<>(); // 用于判读电表是否已存在结果内
+        Integer index = 0; // 用于判读电表是否已存在结果内
         // 日报
         if (dateType == 1) {
             sdf = new SimpleDateFormat("yyyyMMdd");
@@ -39,8 +38,7 @@ public class PowerAnalysisService implements IPowerAnalysisService {
             Integer paramData = Integer.valueOf(createAt);
             // 如果查询日期比今天还要大，直接返回
             if (today < paramData) {
-                result.put("00",0.00);
-                return result;
+                return getDefault(result,0,0);
             }
             // 初始化
             Integer times = 23;
@@ -58,32 +56,18 @@ public class PowerAnalysisService implements IPowerAnalysisService {
             JSONArray array = JSONArray.parseArray(JSON.toJSONString(query.getResultList()));
             // 如果查不出数据，得查有多少个电表
             if (array.size()==0) {
-                return getDefault(result,times,0,"时");
+                return getDefault(result,times,0);
             }
-            for (int i=0;i<array.size();i++) {
-                JSONObject object = array.getJSONObject(i);
-                if (!result.containsKey(object.getString("meter"))) {
-                    JSONObject map = new JSONObject();
-                    for (int j=0;j<=times;j++) {
-                        String time = String.format("%02d",j);
-                        map.put(time+"时",0);
-                    }
-                    map.put(object.getString("hours")+"时",object.getDouble("energy"));
-                    result.put(object.getString("meter"),map);
-                } else {
-                    JSONObject map = result.getJSONObject(object.getString("meter"));
-                    map.put(object.getString("hours")+"时",object.getDouble("energy"));
-                    result.put(object.getString("meter"),map);
-                }
-            }
+            // 公用方法
+            result = analysisResult(array,hasExists,result,times,index);
+
         // 月报
         } else if (dateType == 2) {
             sdf = new SimpleDateFormat("yyyyMM");
             Integer today = Integer.valueOf(sdf.format(new Date()));
             Integer paramData = Integer.valueOf(createAt);
             if (today < paramData) {
-                result.put("00",0.00);
-                return result;
+                return getDefault(result,1,1);
             }
             // 初始化
             Calendar calendar = Calendar.getInstance();
@@ -106,32 +90,18 @@ public class PowerAnalysisService implements IPowerAnalysisService {
             JSONArray array = JSONArray.parseArray(JSON.toJSONString(query.getResultList()));
             // 如果查不出数据，得查有多少个电表
             if (array.size()==0) {
-                return getDefault(result,times,1,"日");
+                return getDefault(result,times,1);
             }
-            for (int i=0;i<array.size();i++) {
-                JSONObject object = array.getJSONObject(i);
-                if (!result.containsKey(object.getString("meter"))) {
-                    JSONObject map = new JSONObject();
-                    for (int j=1;j<=times;j++) {
-                        String time = String.format("%02d",j);
-                        map.put(time+"日",0);
-                    }
-                    map.put(object.getString("days")+"日",object.getDouble("energy"));
-                    result.put(object.getString("meter"),map);
-                } else {
-                    JSONObject map = result.getJSONObject(object.getString("meter"));
-                    map.put(object.getString("days")+"日",object.getDouble("energy"));
-                    result.put(object.getString("meter"),map);
-                }
-            }
+            // 公用方法
+            result = analysisResult(array,hasExists,result,times,index);
+
         // 年报
         } else {
             sdf = new SimpleDateFormat("yyyy");
             Integer today = Integer.valueOf(sdf.format(new Date()));
             Integer paramData = Integer.valueOf(createAt);
             if (today < paramData) {
-                result.put("00",0.00);
-                return result;
+                return getDefault(result,1,1);
             }
             // 初始化
             Integer times = 12;
@@ -148,24 +118,10 @@ public class PowerAnalysisService implements IPowerAnalysisService {
             JSONArray array = JSONArray.parseArray(JSON.toJSONString(query.getResultList()));
             // 如果查不出数据，得查有多少个电表
             if (array.size()==0) {
-                return getDefault(result,times,1,"月");
+                return getDefault(result,times,1);
             }
-            for (int i=0;i<array.size();i++) {
-                JSONObject object = array.getJSONObject(i);
-                if (!result.containsKey(object.getString("meter"))) {
-                    JSONObject map = new JSONObject();
-                    for (int j=1;j<=times;j++) {
-                        String time = String.format("%02d",j);
-                        map.put(time+"月",0);
-                    }
-                    map.put(object.getString("months")+"月",object.getDouble("energy"));
-                    result.put(object.getString("meter"),map);
-                } else {
-                    JSONObject map = result.getJSONObject(object.getString("meter"));
-                    map.put(object.getString("months")+"月",object.getDouble("energy"));
-                    result.put(object.getString("meter"),map);
-                }
-            }
+            // 公用方法
+            result = analysisResult(array,hasExists,result,times,index);
         }
         return result;
     }
@@ -242,8 +198,8 @@ public class PowerAnalysisService implements IPowerAnalysisService {
     }
 
     @Override
-    public JSONObject monthOnMonth(String centralNode,Integer dateType, String createAt) {
-        JSONObject result = new JSONObject();
+    public JSONArray monthOnMonth(String centralNode,Integer dateType, String createAt) {
+        JSONArray result = new JSONArray();
         Query query;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
         Calendar calendar = Calendar.getInstance(); // 判断大于明天或下周或下月
@@ -359,8 +315,8 @@ public class PowerAnalysisService implements IPowerAnalysisService {
     }
 
     @Override
-    public JSONObject getCollection(String beginDate, String endDate) {
-        JSONObject result = new JSONObject();
+    public JSONArray getCollection(String beginDate, String endDate) {
+        JSONArray result = new JSONArray();
         String findEnergy = "select truncate(max(electric_energy),2) as energy,meter from meter_record " +
                 "where DATE_FORMAT(create_at,'%Y%m%d%H%i') = ?1 GROUP BY meter";
         Query query = em.createNativeQuery(findEnergy);
@@ -380,10 +336,13 @@ public class PowerAnalysisService implements IPowerAnalysisService {
                     }
                 }
                 JSONObject object = new JSONObject();
+                JSONObject object1 = new JSONObject();
                 object.put("beginEnergy",begin.getDouble("energy"));
                 object.put("endEnergy",energy1);
                 object.put("different",energy1-begin.getDouble("energy"));
-                result.put(object.getString("meter"),object);
+                object1.put("meter",object.getString("meter"));
+                object1.put("energy",object);
+                result.add(object1);
             }
         } else if (beginEnergy.size()==0&&endEnergy.size()==0) {
             collectionDefault(result);
@@ -418,23 +377,67 @@ public class PowerAnalysisService implements IPowerAnalysisService {
     }
 
     // 用能分析日期大于今日时间的默认值
-    private JSONObject getDefault(JSONObject result, Integer times, int i, String type) {
+    private JSONArray getDefault(JSONArray result, Integer times, int i) {
         String findMeter = "select distinct meter from meter_record";
         Query query = em.createNativeQuery(findMeter);
         List<String> meters = query.getResultList();
-        JSONObject energy = new JSONObject();
+        JSONArray energy = new JSONArray();
         for (;i<=times;i++) {
+            JSONObject object = new JSONObject();
             String time = String.format("%02d",i);
-            energy.put(time+type,0);
+            object.put("time",time);
+            object.put("value",0.00);
+            energy.add(object);
         }
         for (String meter : meters) {
-            result.put(meter,energy);
+            JSONObject object = new JSONObject();
+            object.put("meter",meter);
+            object.put("energy",energy);
+            result.add(object);
+        }
+        return result;
+    }
+
+    // 处理分析结果
+    public JSONArray analysisResult(JSONArray array,HashMap<String,Integer> hasExists,
+                                    JSONArray result,Integer times,Integer index) {
+        for (int i=0;i<array.size();i++) {
+            JSONObject object = array.getJSONObject(i);
+            if (!hasExists.containsKey(object.getString("meter"))) {
+                JSONObject object2 = new JSONObject(); // 电表与时间段
+                JSONArray array1 = new JSONArray(); // 时间段
+                for (int j=0;j<=times;j++) {
+                    JSONObject object1 = new JSONObject();
+                    String time = String.format("%02d",j);
+                    object1.put("time",time);
+                    object1.put("value",0.00);
+                    if (object.getString("hours").equals(time)) {
+                        object1.put("time",time);
+                        object1.put("value",object.getDouble("energy"));
+                    }
+                    array1.add(object1);
+                }
+                object2.put("meter",object.getString("meter"));
+                object2.put("energy",array1);
+                result.add(object2);
+                hasExists.put(object.getString("meter"),index);
+                index++;
+            } else {
+                JSONObject meterEnergy = result.getJSONObject(hasExists.get(object.getString("meter")));
+                JSONArray array1 = meterEnergy.getJSONArray("energy");
+                for (int d = 0;d < array1.size();d++) {
+                    if (array1.getJSONObject(d).getString("time").equals(object.getString("hours"))) {
+                        array1.getJSONObject(d).put("value",object.getDouble("energy"));
+                        break;
+                    }
+                }
+            }
         }
         return result;
     }
 
     // 环比分析日期大于明天时间的默认值
-    private JSONObject getDefault2(String centralNode,JSONObject result) {
+    private JSONArray getDefault2(String centralNode,JSONArray result) {
         String findMeter = "select distinct meter from meter_record where central_node = ?1";
         Query query = em.createNativeQuery(findMeter);
         query.setParameter(1,centralNode);
@@ -445,13 +448,16 @@ public class PowerAnalysisService implements IPowerAnalysisService {
             object.put("yesterday",0);
             object.put("addValue",0);
             object.put("percent",0);
-            result.put(meter,object);
+            JSONObject object1 = new JSONObject();
+            object1.put("meter",meter);
+            object1.put("energy",object);
+            result.add(object1);
         }
         return result;
     }
 
     // 环比比分析的缺省判断
-    private JSONObject lastAndCurrent(JSONArray lastDays,JSONArray currentDays,JSONObject result,String centralNode) {
+    private JSONArray lastAndCurrent(JSONArray lastDays,JSONArray currentDays,JSONArray result,String centralNode) {
         if (lastDays.size()>0&&currentDays.size()>0) {
             for (int i=0;i<currentDays.size();i++) {
                 JSONObject object = currentDays.getJSONObject(i);
@@ -468,7 +474,10 @@ public class PowerAnalysisService implements IPowerAnalysisService {
                     double percent = addValue / double1;
                     param.put("percent",String.format("%.2f", percent));
                 }
-                result.put(object.getString("meter"),param);
+                JSONObject object1 = new JSONObject();
+                object1.put("meter",object.getString("meter"));
+                object1.put("energy",param);
+                result.add(object1);
             }
         } else if (lastDays.size()==0&&currentDays.size()==0) {
             // 调用了getDefault2方法
@@ -485,7 +494,7 @@ public class PowerAnalysisService implements IPowerAnalysisService {
     }
 
     // 环比分析某一天缺省的赋值
-    private void setValue(JSONObject result,JSONArray days,Boolean isCurrent) {
+    private void setValue(JSONArray result,JSONArray days,Boolean isCurrent) {
         for (int i=0;i<days.size();i++) {
             JSONObject object = days.getJSONObject(i);
             Double double1 = 0.0;
@@ -502,7 +511,10 @@ public class PowerAnalysisService implements IPowerAnalysisService {
                 param.put("current",double1);
                 param.put("lastTime",object.getDouble("energy"));
             }
-            result.put(object.getString("meter"),param);
+            JSONObject object1 = new JSONObject();
+            object1.put("meter",object.getString("meter"));
+            object1.put("energy",param);
+            result.add(object1);
         }
     }
 
@@ -517,7 +529,7 @@ public class PowerAnalysisService implements IPowerAnalysisService {
     }
 
     // 电能抄集无数据情况下的默认值
-    private void collectionDefault(JSONObject result) {
+    private void collectionDefault(JSONArray result) {
         String findMeter = "select distinct meter from meter_record";
         Query query = em.createNativeQuery(findMeter);
         List<String> meters = query.getResultList();
@@ -526,25 +538,33 @@ public class PowerAnalysisService implements IPowerAnalysisService {
             object.put("beginEnergy",0);
             object.put("endEnergy",0);
             object.put("different",0);
-            result.put(meter,object);
+            JSONObject object1 = new JSONObject();
+            object1.put("meter",meter);
+            object1.put("energy",object);
+            result.add(object1);
         }
     }
 
     // 电能抄集某一时间段无数据情况下的默认值
-    private void setNullValue(JSONObject result,JSONArray times,boolean isBegin) {
+    private void setNullValue(JSONArray result,JSONArray times,boolean isBegin) {
         for (int i=0;i<times.size();i++) {
             JSONObject energy = times.getJSONObject(i);
             JSONObject object = new JSONObject();
+            JSONObject object1 = new JSONObject();
             if (isBegin) {
                 object.put("beginEnergy",energy.getDouble("energy"));
                 object.put("endEnergy",0);
                 object.put("different",0);
-                result.put(object.getString("meter"),object);
+                object1.put("meter",object.getString("meter"));
+                object1.put("energy",object);
+                result.add(object1);
             } else {
                 object.put("beginEnergy",0);
                 object.put("endEnergy",energy.getDouble("energy"));
                 object.put("different",energy.getDouble("energy"));
-                result.put(object.getString("meter"),object);
+                object1.put("meter",object.getString("meter"));
+                object1.put("energy",object);
+                result.add(object1);
             }
         }
     }
