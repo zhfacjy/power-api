@@ -1,5 +1,6 @@
 package power.api.controller;
 
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ import javax.validation.Valid;
  */
 @RestController
 @RequestMapping("/over/limit/event")
+@Api(description = "越限事件")
 public class OverLimitEventController {
 
     @Autowired
