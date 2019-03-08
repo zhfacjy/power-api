@@ -2,6 +2,9 @@ package power.api.controller.responseModel.powerMonitoring.limitReport;
 
 import lombok.Data;
 
+import java.util.HashMap;
+import java.util.List;
+
 /**
  * {
  * meter:'01',
@@ -18,26 +21,5 @@ public class PowerReportResponse {
     private String meter;
     private String createAt;
 
-    private String maxActivePowerCreateAt;
-    private String minActivePowerCreateAt;
-    private Double maxActivePower;
-    private Double minActivePower;
-    private Double avgActivePower;
-
-    private String maxReactivePowerCreateAt;
-    private String minReactivePowerCreateAt;
-    private Double maxReactivePower;
-    private Double minReactivePower;
-    private Double avgReactivePower;
-
-    private String maxApparentPowerCreateAt;
-    private String minApparentPowerCreateAt;
-    private Double maxApparentPower;
-    private Double minApparentPower;
-    private Double avgApparentPower;
-
-    public PowerReportResponse(String meter, String createAt) {
-        this.meter = meter;
-        this.createAt = createAt;
-    }
+    private List<LimitMaxAvgMin> list;
 }

@@ -5,10 +5,7 @@ import org.springframework.stereotype.Service;
 import power.api.common.RestResp;
 import power.api.controller.paramModel.GetElectricDataParam;
 import power.api.controller.responseModel.powerMonitoring.*;
-import power.api.controller.responseModel.powerMonitoring.limitReport.ElectricCurrentReportResponse;
-import power.api.controller.responseModel.powerMonitoring.limitReport.LineVoltageReportResponse;
-import power.api.controller.responseModel.powerMonitoring.limitReport.PhaseVoltageReportResponse;
-import power.api.controller.responseModel.powerMonitoring.limitReport.PowerReportResponse;
+import power.api.controller.responseModel.powerMonitoring.limitReport.*;
 import power.api.controller.responseModel.powerMonitoring.runningReport.PhaseReportItem;
 import power.api.controller.responseModel.powerMonitoring.runningReport.ReportResponse;
 import power.api.dto.LimitReportDto;
@@ -444,37 +441,39 @@ public class MeterRecordService implements IMeterRecordService {
         try {
             // 响应对象和电表之间的索引，方便查找装载数据
             HashMap<String, PowerReportResponse> powerReportResponseHashMap = new HashMap<>();
+            List<LimitMaxAvgMin> limitMaxAvgMinList = new LinkedList<>();
 
             // 查找有功功率的最大值最小值平均值并填充
-            String methodType = "ActivePower";
-            List<LimitReportDto> limitReportDtoList = meterRecordRepository.findMaxActivePowerByCreateAt(sqlFormat, createAtString);
-            assembleReportMaxValue(limitReportDtoList, powerReportResponseHashMap, methodType, PowerReportResponse.class);
-            limitReportDtoList = meterRecordRepository.findMinActivePowerByCreateAt(sqlFormat, createAtString);
-            assembleReportMinValue(limitReportDtoList, powerReportResponseHashMap, methodType);
-            limitReportDtoList = meterRecordRepository.findAvgActivePowerByCreateAt(sqlFormat, createAtString);
-            assembleReportAvgValue(limitReportDtoList, powerReportResponseHashMap, methodType);
+            List<LimitReportDto> maxList = meterRecordRepository.findMaxActivePowerByCreateAt(sqlFormat, createAtString);
+            List<LimitReportDto> minList = meterRecordRepository.findMinActivePowerByCreateAt(sqlFormat, createAtString);
+            List<LimitReportDto> avgList = meterRecordRepository.findAvgActivePowerByCreateAt(sqlFormat, createAtString);
+            List<LimitMaxAvgMinItem> itemList = this.assembleReportItemValue(maxList, avgList, minList);
+            LimitMaxAvgMin limitMaxAvgMin = new LimitMaxAvgMin();
+            limitMaxAvgMin.setListDesc("有功功率");
+            limitMaxAvgMin.setList(itemList);
+            limitMaxAvgMinList.add(limitMaxAvgMin);
 
             // 查找无功功率的最大值最小值平均值并填充
-            methodType = "ReactivePower";
-            limitReportDtoList = meterRecordRepository.findMaxReactivePowerByCreateAt(sqlFormat, createAtString);
-            assembleReportMaxValue(limitReportDtoList, powerReportResponseHashMap, methodType, PowerReportResponse.class);
-            limitReportDtoList = meterRecordRepository.findMinReactivePowerByCreateAt(sqlFormat, createAtString);
-            assembleReportMinValue(limitReportDtoList, powerReportResponseHashMap, methodType);
-            limitReportDtoList = meterRecordRepository.findAvgReactivePowerByCreateAt(sqlFormat, createAtString);
-            assembleReportAvgValue(limitReportDtoList, powerReportResponseHashMap, methodType);
+            maxList = meterRecordRepository.findMaxReactivePowerByCreateAt(sqlFormat, createAtString);
+            minList = meterRecordRepository.findMinReactivePowerByCreateAt(sqlFormat, createAtString);
+            avgList = meterRecordRepository.findAvgReactivePowerByCreateAt(sqlFormat, createAtString);
+            itemList = this.assembleReportItemValue(maxList, avgList, minList);
+            limitMaxAvgMin = new LimitMaxAvgMin();
+            limitMaxAvgMin.setListDesc("无功功率");
+            limitMaxAvgMin.setList(itemList);
+            limitMaxAvgMinList.add(limitMaxAvgMin);
 
             // 查找视在功率的最大值最小值平均值并填充
-            methodType = "ApparentPower";
-            limitReportDtoList = meterRecordRepository.findMaxApparentPowerByCreateAt(sqlFormat, createAtString);
-            assembleReportMaxValue(limitReportDtoList, powerReportResponseHashMap, methodType, PowerReportResponse.class);
-            limitReportDtoList = meterRecordRepository.findMinApparentPowerByCreateAt(sqlFormat, createAtString);
-            assembleReportMinValue(limitReportDtoList, powerReportResponseHashMap, methodType);
-            limitReportDtoList = meterRecordRepository.findAvgApparentPowerByCreateAt(sqlFormat, createAtString);
-            assembleReportAvgValue(limitReportDtoList, powerReportResponseHashMap, methodType);
+            maxList = meterRecordRepository.findMaxApparentPowerByCreateAt(sqlFormat, createAtString);
+            minList = meterRecordRepository.findMinApparentPowerByCreateAt(sqlFormat, createAtString);
+            avgList = meterRecordRepository.findAvgApparentPowerByCreateAt(sqlFormat, createAtString);
+            itemList = this.assembleReportItemValue(maxList, avgList, minList);
+            limitMaxAvgMin = new LimitMaxAvgMin();
+            limitMaxAvgMin.setListDesc("视在功率");
+            limitMaxAvgMin.setList(itemList);
+            limitMaxAvgMinList.add(limitMaxAvgMin);
 
-            //构造有功功率的数据
-            List<PowerReportResponse> powerReportResponseList = this.processHashMapGetList(powerReportResponseHashMap);
-            return RestResp.createBySuccess(powerReportResponseList);
+            return RestResp.createBySuccess(limitMaxAvgMinList);
         } catch (Exception e) {
             e.printStackTrace();
             return RestResp.createBy(RestResp.ERROR, "产生内部错误，来源：极值报表统计");
@@ -643,6 +642,47 @@ public class MeterRecordService implements IMeterRecordService {
                     .assembleBySpecifiedMethod(itemObj, maxMethodName, limitReportDto.getCreateAt());
             powerReportResponseHashMap.put(limitReportDto.getMeter(), itemObj);
         }
+    }
+
+    private List<LimitMaxAvgMinItem> assembleReportItemValue(List<LimitReportDto> maxList,
+                                                             List<LimitReportDto> avgList,
+                                                             List<LimitReportDto> minList) {
+        if (maxList.isEmpty()) return new ArrayList<>();
+        HashMap<String, LimitMaxAvgMinItem> itemCache = new HashMap<>();
+        int length = maxList.size();
+        for (int i = 0; i < length; i++) {
+            LimitReportDto maxDto = maxList.get(i);
+            LimitReportDto avgDto = avgList.get(i);
+            LimitReportDto minDto = minList.get(i);
+
+            LimitMaxAvgMinItem item = this.produceItemByCache(itemCache, maxDto);
+            item.setMaxValue(maxDto.getLimitValue());
+            item.setMaxValueCreateAt(maxDto.getCreateAt());
+
+            item = this.produceItemByCache(itemCache, minDto);
+            item.setMinValue(minDto.getLimitValue());
+            item.setMinValueCreateAt(minDto.getCreateAt());
+
+            item = this.produceItemByCache(itemCache, avgDto);
+            item.setAvgValue(avgDto.getLimitValue());
+        }
+        Iterator<String> iterator = itemCache.keySet().iterator();
+
+        List<LimitMaxAvgMinItem> itemList = new ArrayList<>(itemCache.size());
+        while (iterator.hasNext()) {
+            itemList.add(itemCache.get(iterator.next()));
+        }
+        return itemList;
+    }
+
+    private LimitMaxAvgMinItem produceItemByCache(HashMap<String, LimitMaxAvgMinItem> itemCache, LimitReportDto dto) {
+        LimitMaxAvgMinItem item = itemCache.get(dto.getMeter());
+        if (item == null) {
+            item = new LimitMaxAvgMinItem();
+            item.setMeter(dto.getMeter());
+            itemCache.put(dto.getMeter(), item);
+        }
+        return item;
     }
 
     private <T> void assembleReportMinValue(List<LimitReportDto> limitReportDtoList,
