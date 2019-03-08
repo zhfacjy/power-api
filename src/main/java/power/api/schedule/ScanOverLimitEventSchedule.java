@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import power.api.model.OverLimitEvent;
 import power.api.repository.OverLimitEventRepository;
+import power.api.util.DictValue;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -26,10 +27,6 @@ import java.util.List;
 @Component
 public class ScanOverLimitEventSchedule {
 
-    // 越限的限定值  key 对应over_limit_event表的type
-    private static final HashMap<String, Object> defaultValue = new HashMap<String, Object>(){{
-        put("01", 50);
-    }};
     // 没有记录到数据库，只能记录在类里面的最后运行时间，如果项目重启了，该时间也会变动
     private Date lastRunTime = new Date();
 
@@ -52,7 +49,7 @@ public class ScanOverLimitEventSchedule {
             String sql = "select create_at from meter_record where id =" +
                     "(select min(id) from meter_record where temperature < ?1 and create_at > ?2 and meter = ?3)";
             query2 = em.createNativeQuery(sql);
-            query2.setParameter(1,defaultValue.get("01"));
+            query2.setParameter(1,DictValue.overLimitValue.get("01"));
             for (int i=0;i<hasExist.size();i++) {
                 JSONObject object = hasExist.getJSONObject(i);
                 query2.setParameter(2,object.getDate("beginDate"));
@@ -70,7 +67,7 @@ public class ScanOverLimitEventSchedule {
                 "left join meter_record b on a.id = b.id " +
                 "where a.temperature >= ?1 and a.create_at > ?2 GROUP BY a.meter";
         Query query = em.createNativeQuery(findMinOver);
-        query.setParameter(1,defaultValue.get("01"));
+        query.setParameter(1, DictValue.overLimitValue.get("01"));
         query.setParameter(2,lastRunTime);
         query.unwrap(NativeQueryImpl.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
         JSONArray jsonArray = JSONArray.parseArray(JSON.toJSONString(query.getResultList()));
@@ -80,7 +77,7 @@ public class ScanOverLimitEventSchedule {
             String findEnd = "select create_at from meter_record where id =" +
                     "(select min(id) from meter_record where id > ?1 and temperature < ?2 and meter = ?3)";
             query = em.createNativeQuery(findEnd);
-            query.setParameter(2,defaultValue.get("01"));
+            query.setParameter(2,DictValue.overLimitValue.get("01"));
             for (int i=0;i<jsonArray.size();i++) {
                 // 查出是否存在已结束的时间
                 JSONObject object = jsonArray.getJSONObject(i);
@@ -90,7 +87,7 @@ public class ScanOverLimitEventSchedule {
 
                 OverLimitEvent overLimitEvent = new OverLimitEvent();
                 overLimitEvent.setBeginDate(object.getDate("createAt"));
-                overLimitEvent.setDefaultValue(String.valueOf(defaultValue.get("01")));
+                overLimitEvent.setDefaultValue(String.valueOf(DictValue.overLimitValue.get("01")));
                 overLimitEvent.setMeter(object.getString("meter"));
                 overLimitEvent.setType("01");
                 overLimitEvent.setWarningValue(object.getInteger("temperature")+"");
@@ -111,7 +108,7 @@ public class ScanOverLimitEventSchedule {
         String findMore = "select create_at as createAt,temperature from meter_record where id =(" +
                 "select min(id) from meter_record where temperature >= ?1 and create_at > ?2 and meter = ?3)";
         Query query = em.createNativeQuery(findMore);
-        query.setParameter(1,defaultValue.get("01"));
+        query.setParameter(1,DictValue.overLimitValue.get("01"));
         query.setParameter(2,createAt);
         query.setParameter(3,meter);
         query.unwrap(NativeQueryImpl.class).setResultTransformer(Transformers.ALIAS_TO_ENTITY_MAP);
@@ -123,13 +120,13 @@ public class ScanOverLimitEventSchedule {
 
             OverLimitEvent overLimitEvent = new OverLimitEvent();
             overLimitEvent.setBeginDate(rlt.getJSONObject(0).getDate("createAt"));
-            overLimitEvent.setDefaultValue(String.valueOf(defaultValue.get("01")));
+            overLimitEvent.setDefaultValue(String.valueOf(DictValue.overLimitValue.get("01")));
             overLimitEvent.setMeter(meter);
             overLimitEvent.setType("01");
             overLimitEvent.setWarningValue(rlt.getJSONObject(0).getInteger("temperature")+"");
 
             query = em.createNativeQuery(findMoreEnd);
-            query.setParameter(1,defaultValue.get("01"));
+            query.setParameter(1,DictValue.overLimitValue.get("01"));
             query.setParameter(2,rlt.getJSONObject(0).getDate("createAt"));
             query.setParameter(3,meter);
 
