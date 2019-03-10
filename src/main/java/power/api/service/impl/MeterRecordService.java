@@ -1,30 +1,32 @@
 package power.api.service.impl;
 
+import com.alibaba.fastjson.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import power.api.common.RestResp;
+import power.api.common.TableFieldEnum;
 import power.api.controller.paramModel.GetElectricDataParam;
+import power.api.controller.responseModel.BaseTableResponse;
 import power.api.controller.responseModel.powerMonitoring.*;
 import power.api.controller.responseModel.powerMonitoring.limitReport.*;
 import power.api.controller.responseModel.powerMonitoring.runningReport.PhaseReportItem;
 import power.api.controller.responseModel.powerMonitoring.runningReport.ReportResponse;
 import power.api.dto.LimitReportDto;
 import power.api.dto.MaxAvgMinDto;
+import power.api.dto.MeterRecordDto;
 import power.api.dto.PhaseVoltageReportDto;
 import power.api.model.MeterRecord;
 import power.api.repository.MeterRecordRepository;
 import power.api.service.IMeterRecordService;
-import power.api.service.impl.DataWrapperClassHolder.DegreeOfThreePhaseUnbalanceHolder;
-import power.api.service.impl.DataWrapperClassHolder.LineVoltageHolder;
-import power.api.service.impl.DataWrapperClassHolder.PhaseHolder;
 import power.api.util.AutoAssembleUtil;
 import power.api.util.DateFormatUtil;
 import power.api.util.PaddingTimeUtil;
 import power.api.util.meterRecordCalculator.MeterRecordCalculator;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.Timestamp;
+import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -40,89 +42,495 @@ public class MeterRecordService implements IMeterRecordService {
     @Autowired
     private MeterRecordRepository meterRecordRepository;
 
-    @Override
-    public RestResp countActivePowerData(long createAt, GetElectricDataParam getElectricDataParam) {
-        long remain = createAt + getRemainMillisSecondsOneDay(createAt);
-        return this.countActivePowerDataRange(createAt, remain, getElectricDataParam);
+    private final String DATA_KEY = "data";
+    private final String COLUMN_KEY = "column";
+    private DecimalFormat decimalFormat = new DecimalFormat("0.0");
+
+
+    private HashMap<String, List> countCommon(long createAt, TableFieldEnum[] fieldEnums) throws InvocationTargetException, IllegalAccessException {
+        // 日期转为完整的日期
+        String dateString = DateFormatUtil.formatDateTo(createAt, DateFormatUtil.SECOND_FORMAT);
+        // 获取数据，并从DTO转为实体类型，以便使用计算工具类
+        List<MeterRecordDto> dtoList = this.getMeterRecordDtoListByCreateAt(dateString);
+//        List<MeterRecord> recordList = new ArrayList<>(dtoList.size());
+//        for (MeterRecordDto dto : dtoList) {
+//            MeterRecord m = new MeterRecord();
+//            AutoAssembleUtil.assembleSameNameField(m, dto);
+//            recordList.add(m);
+//        }
+        // 构造响应给前端的自定义列
+        List<BaseColumnItem> columnItemList = this.produceColumnListAndIndex(fieldEnums);
+        HashMap<String, List> dataResponse = new HashMap<>();
+        dataResponse.put(COLUMN_KEY, columnItemList);
+        dataResponse.put(DATA_KEY, dtoList);
+        return dataResponse;
     }
 
     @Override
-    public RestResp countActivePowerDataRange(long startAt, long endAt, GetElectricDataParam getElectricDataParam) {
-        List<MeterRecord> meterRecordList = getMeterRecordList(startAt, endAt);
-        List<ActivePowerResponse> activePowerResponsesList = new ArrayList<>(meterRecordList.size());
-        for (MeterRecord m : meterRecordList) {
-            ActivePowerResponse activePowerResponse = new ActivePowerResponse();
-            activePowerResponse.setCreateAt(m.getCreateAt());
-            activePowerResponse.setActivePowerTotal(m.getActivePower());
-            activePowerResponsesList.add(activePowerResponse);
+    public RestResp countActivePowerData(long createAt, GetElectricDataParam getElectricDataParam) {
+        TableFieldEnum[] fieldEnums = new TableFieldEnum[]{
+                TableFieldEnum.LOOP_NAME,
+                TableFieldEnum.COLECTION_TIME,
+                TableFieldEnum.P_A,
+                TableFieldEnum.P_B,
+                TableFieldEnum.P_C,
+                TableFieldEnum.P
+        };
+        HashMap<String, List> map = null;
+        try {
+            map = this.countCommon(createAt, fieldEnums);
+            List<MeterRecordDto> meterRecordList = map.get(DATA_KEY);
+            List<BaseColumnItem> columnItemList = map.get(COLUMN_KEY);
+            // 构造表格每一行的值
+            List<JSONObject> dataList = new LinkedList<>();
+            for (MeterRecordDto record : meterRecordList) {
+                JSONObject dataItem = new JSONObject();
 
+                String dataItemKey = TableFieldEnum.LOOP_NAME.getValue();
+                dataItem.put(dataItemKey, "主进线柜");
+
+                dataItemKey = TableFieldEnum.COLECTION_TIME.getValue();
+                dataItem.put(dataItemKey, record.getCreateAt());
+
+                // TODO 计算A相有功功率
+                dataItemKey = TableFieldEnum.P_A.getValue();
+                dataItem.put(dataItemKey, 0);
+
+                // TODO 计算B相有功功率
+                dataItemKey = TableFieldEnum.P_B.getValue();
+                dataItem.put(dataItemKey, 0);
+
+                // TODO 计算C相有功功率
+                dataItemKey = TableFieldEnum.P_C.getValue();
+                dataItem.put(dataItemKey, 0);
+
+                dataItemKey = TableFieldEnum.P.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(record.getActivePower()));
+                dataList.add(dataItem);
+            }
+            BaseTableResponse<JSONObject> baseTableResponse = new BaseTableResponse<JSONObject>();
+            baseTableResponse.setColumnList(columnItemList);
+            baseTableResponse.setData(dataList);
+            return RestResp.createBySuccess(baseTableResponse);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return RestResp.createBy(RestResp.ERROR, "服务器内部错误");
         }
-
-
-        //注释不要删以后要用
-/*       PhaseHolder activePowerHolder = new PhaseHolder();
-
-        for (MeterRecord m : meterRecordList) {
-            activePowerHolder.setPhaseA( m.getIa() * m.getUa() * m.getPfa());
-            activePowerHolder.setPhaseB(m.getIb() * m.getUb() * m.getPfa()) ;
-            activePowerHolder.setPhaseC(m.getIc() * m.getUc() * m.getPfa());
-            ActivePowerResponse activePowerResponse = new ActivePowerResponse();
-            activePowerResponse.setCreateAt(m.getCreateAt());
-            activePowerResponse.setActivePowerA(activePowerHolder.getPhaseA());
-
-            activePowerResponse.setActivePowerB(activePowerHolder.getPhaseB());
-            activePowerResponse.setActivePowerC(activePowerHolder.getPhaseC());
-
-            activePowerResponse.setActivePowerTotal(activePowerHolder.getPhaseA() + activePowerHolder.getPhaseB() + activePowerHolder.getPhaseC());
-            activePowerResponsesList.add(activePowerResponse);
-        }*/
-
-        return RestResp.createBySuccess(activePowerResponsesList);
     }
 
     @Override
     public RestResp countApparentPowerData(long createAt, GetElectricDataParam getElectricDataParam) {
-        long remain = createAt + getRemainMillisSecondsOneDay(createAt);
-        return this.countApparentPowerDataRange(createAt, remain, getElectricDataParam);
+        // 自定义的表格列
+        TableFieldEnum[] fieldEnums = new TableFieldEnum[]{
+                TableFieldEnum.LOOP_NAME,
+                TableFieldEnum.COLECTION_TIME,
+                TableFieldEnum.S_A,
+                TableFieldEnum.S_B,
+                TableFieldEnum.S_C,
+                TableFieldEnum.S
+        };
+        HashMap<String, List> map = null;
+        try {
+            map = this.countCommon(createAt, fieldEnums);
+            List<MeterRecordDto> meterRecordList = map.get(DATA_KEY);
+            List<BaseColumnItem> columnItemList = map.get(COLUMN_KEY);
+            // 构造表格每一行的值
+            List<JSONObject> dataList = new LinkedList<>();
+
+            for (MeterRecordDto record : meterRecordList) {
+                JSONObject dataItem = new JSONObject();
+
+                String dataItemKey = TableFieldEnum.LOOP_NAME.getValue();
+                dataItem.put(dataItemKey, "主进线柜");
+
+                dataItemKey = TableFieldEnum.COLECTION_TIME.getValue();
+                dataItem.put(dataItemKey, record.getCreateAt());
+
+                // 三相和总的视在功率
+                dataItemKey = TableFieldEnum.S_A.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(MeterRecordCalculator.countApparentPowerA(record)));
+                dataItemKey = TableFieldEnum.S_B.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(MeterRecordCalculator.countApparentPowerB(record)));
+                dataItemKey = TableFieldEnum.S_C.getValue();
+                dataItem.put(dataItemKey, MeterRecordCalculator.countApparentPowerC(record));
+                dataItemKey = TableFieldEnum.S.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(MeterRecordCalculator.countApparentPowerTotal(record)));
+
+                dataList.add(dataItem);
+            }
+            BaseTableResponse<JSONObject> baseTableResponse = new BaseTableResponse<JSONObject>();
+            baseTableResponse.setColumnList(columnItemList);
+            baseTableResponse.setData(dataList);
+            return RestResp.createBySuccess(baseTableResponse);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return RestResp.createBy(RestResp.ERROR, "服务器内部错误");
+        }
+    }
+
+    @Override
+    public RestResp countPhaseCurrentData(long createAt, GetElectricDataParam getElectricDataParam) {
+        // 自定义的表格列
+        TableFieldEnum[] fieldEnums = new TableFieldEnum[]{
+                TableFieldEnum.LOOP_NAME,
+                TableFieldEnum.COLECTION_TIME,
+                TableFieldEnum.I_A,
+                TableFieldEnum.I_B,
+                TableFieldEnum.I_C
+        };
+        HashMap<String, List> map = null;
+        try {
+            map = this.countCommon(createAt, fieldEnums);
+            List<MeterRecordDto> meterRecordList = map.get(DATA_KEY);
+            List<BaseColumnItem> columnItemList = map.get(COLUMN_KEY);
+            // 构造表格每一行的值
+            List<JSONObject> dataList = new LinkedList<>();
+            for (MeterRecordDto record : meterRecordList) {
+
+                JSONObject dataItem = new JSONObject();
+
+                String dataItemKey = TableFieldEnum.LOOP_NAME.getValue();
+                dataItem.put(dataItemKey, "主进线柜");
+
+                dataItemKey = TableFieldEnum.COLECTION_TIME.getValue();
+                dataItem.put(dataItemKey, record.getCreateAt());
+
+                dataItemKey = TableFieldEnum.I_A.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(record.getIa()));
+                dataItemKey = TableFieldEnum.I_B.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(record.getIb()));
+                dataItemKey = TableFieldEnum.I_C.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(record.getIc()));
+
+                dataList.add(dataItem);
+            }
+            BaseTableResponse<JSONObject> baseTableResponse = new BaseTableResponse<JSONObject>();
+            baseTableResponse.setColumnList(columnItemList);
+            baseTableResponse.setData(dataList);
+            return RestResp.createBySuccess(baseTableResponse);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return RestResp.createBy(RestResp.ERROR, "服务器内部错误");
+        }
+    }
+
+
+    @Override
+    public RestResp countPhaseVoltageData(long createAt, GetElectricDataParam getElectricDataParam) {
+        // 自定义的表格列
+        TableFieldEnum[] fieldEnums = new TableFieldEnum[]{
+                TableFieldEnum.LOOP_NAME,
+                TableFieldEnum.COLECTION_TIME,
+                TableFieldEnum.U_A,
+                TableFieldEnum.U_B,
+                TableFieldEnum.U_C
+        };
+        HashMap<String, List> map = null;
+        try {
+            map = this.countCommon(createAt, fieldEnums);
+            List<MeterRecordDto> meterRecordList = map.get(DATA_KEY);
+            List<BaseColumnItem> columnItemList = map.get(COLUMN_KEY);
+            // 构造表格每一行的值
+            List<JSONObject> dataList = new LinkedList<>();
+            for (MeterRecordDto record : meterRecordList) {
+
+                JSONObject dataItem = new JSONObject();
+
+                String dataItemKey = TableFieldEnum.LOOP_NAME.getValue();
+                dataItem.put(dataItemKey, "主进线柜");
+
+                dataItemKey = TableFieldEnum.COLECTION_TIME.getValue();
+                dataItem.put(dataItemKey, record.getCreateAt());
+
+                dataItemKey = TableFieldEnum.U_A.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(record.getUa()));
+                dataItemKey = TableFieldEnum.U_B.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(record.getUb()));
+                dataItemKey = TableFieldEnum.U_C.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(record.getUc()));
+
+                dataList.add(dataItem);
+            }
+            BaseTableResponse<JSONObject> baseTableResponse = new BaseTableResponse<JSONObject>();
+            baseTableResponse.setColumnList(columnItemList);
+            baseTableResponse.setData(dataList);
+            return RestResp.createBySuccess(baseTableResponse);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return RestResp.createBy(RestResp.ERROR, "服务器内部错误");
+        }
+    }
+
+    @Override
+    public RestResp countLineVoltageData(long createAt, GetElectricDataParam getElectricDataParam) {
+        // 自定义的表格列
+        TableFieldEnum[] fieldEnums = new TableFieldEnum[]{
+                TableFieldEnum.LOOP_NAME,
+                TableFieldEnum.COLECTION_TIME,
+                TableFieldEnum.U_AB,
+                TableFieldEnum.U_BC,
+                TableFieldEnum.U_CA
+        };
+        HashMap<String, List> map = null;
+        try {
+            map = this.countCommon(createAt, fieldEnums);
+            List<MeterRecordDto> meterRecordList = map.get(DATA_KEY);
+            List<BaseColumnItem> columnItemList = map.get(COLUMN_KEY);
+            // 构造表格每一行的值
+            List<JSONObject> dataList = new LinkedList<>();
+            for (MeterRecordDto record : meterRecordList) {
+
+                JSONObject dataItem = new JSONObject();
+
+                String dataItemKey = TableFieldEnum.LOOP_NAME.getValue();
+                dataItem.put(dataItemKey, "主进线柜");
+
+                dataItemKey = TableFieldEnum.COLECTION_TIME.getValue();
+                dataItem.put(dataItemKey, record.getCreateAt());
+
+                dataItemKey = TableFieldEnum.U_AB.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(MeterRecordCalculator.countLineVoltageUab(record)));
+                dataItemKey = TableFieldEnum.U_BC.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(MeterRecordCalculator.countLineVoltageUbc(record)));
+                dataItemKey = TableFieldEnum.U_CA.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(MeterRecordCalculator.countLineVoltageUca(record)));
+
+                dataList.add(dataItem);
+            }
+            BaseTableResponse<JSONObject> baseTableResponse = new BaseTableResponse<JSONObject>();
+            baseTableResponse.setColumnList(columnItemList);
+            baseTableResponse.setData(dataList);
+            return RestResp.createBySuccess(baseTableResponse);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return RestResp.createBy(RestResp.ERROR, "服务器内部错误");
+        }
+    }
+
+    @Override
+    public RestResp countPowerFactorData(long createAt, GetElectricDataParam getElectricDataParam) {
+        // 自定义的表格列
+        TableFieldEnum[] fieldEnums = new TableFieldEnum[]{
+                TableFieldEnum.LOOP_NAME,
+                TableFieldEnum.COLECTION_TIME,
+                TableFieldEnum.P_FA,
+                TableFieldEnum.P_FB,
+                TableFieldEnum.P_FC,
+                TableFieldEnum.P
+        };
+        HashMap<String, List> map = null;
+        try {
+            map = this.countCommon(createAt, fieldEnums);
+            List<MeterRecordDto> meterRecordList = map.get(DATA_KEY);
+            List<BaseColumnItem> columnItemList = map.get(COLUMN_KEY);
+            // 构造表格每一行的值
+            List<JSONObject> dataList = new LinkedList<>();
+            for (MeterRecordDto record : meterRecordList) {
+
+                JSONObject dataItem = new JSONObject();
+
+                String dataItemKey = TableFieldEnum.LOOP_NAME.getValue();
+                dataItem.put(dataItemKey, "主进线柜");
+
+                dataItemKey = TableFieldEnum.COLECTION_TIME.getValue();
+                dataItem.put(dataItemKey, record.getCreateAt());
+
+                dataItemKey = TableFieldEnum.P_FA.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(record.getPfa()));
+                dataItemKey = TableFieldEnum.P_FB.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(record.getPfb()));
+                dataItemKey = TableFieldEnum.P_FC.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(record.getPfc()));
+
+                // TODO 把计算方式写进工具类
+                float total = record.getPfa() + record.getPfb() + record.getPfc();
+                dataItemKey = TableFieldEnum.P.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(total));
+
+                dataList.add(dataItem);
+            }
+            BaseTableResponse<JSONObject> baseTableResponse = new BaseTableResponse<JSONObject>();
+            baseTableResponse.setColumnList(columnItemList);
+            baseTableResponse.setData(dataList);
+            return RestResp.createBySuccess(baseTableResponse);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return RestResp.createBy(RestResp.ERROR, "服务器内部错误");
+        }
+    }
+
+    @Override
+    public RestResp countReactivePowerData(long createAt, GetElectricDataParam getElectricDataParam) {
+        // 自定义的表格列
+        TableFieldEnum[] fieldEnums = new TableFieldEnum[]{
+                TableFieldEnum.LOOP_NAME,
+                TableFieldEnum.COLECTION_TIME,
+                TableFieldEnum.Q_A,
+                TableFieldEnum.Q_B,
+                TableFieldEnum.Q_C,
+                TableFieldEnum.Q
+        };
+        HashMap<String, List> map = null;
+        try {
+            map = this.countCommon(createAt, fieldEnums);
+            List<MeterRecordDto> meterRecordList = map.get(DATA_KEY);
+            List<BaseColumnItem> columnItemList = map.get(COLUMN_KEY);
+            // 构造表格每一行的值
+            List<JSONObject> dataList = new LinkedList<>();
+            for (MeterRecordDto record : meterRecordList) {
+
+                JSONObject dataItem = new JSONObject();
+
+                String dataItemKey = TableFieldEnum.LOOP_NAME.getValue();
+                dataItem.put(dataItemKey, "主进线柜");
+
+                dataItemKey = TableFieldEnum.COLECTION_TIME.getValue();
+                dataItem.put(dataItemKey, record.getCreateAt());
+
+                // TODO 计算A相无功功率
+                dataItemKey = TableFieldEnum.Q_A.getValue();
+                dataItem.put(dataItemKey, 0);
+
+                // TODO 计算B相无功功率
+                dataItemKey = TableFieldEnum.Q_B.getValue();
+                dataItem.put(dataItemKey, 0);
+
+                // TODO 计算C相无功功率
+                dataItemKey = TableFieldEnum.Q_C.getValue();
+                dataItem.put(dataItemKey, 0);
+
+                // 暂时性使用这个方法
+                float total = MeterRecordCalculator.countReactivePowerTotalTest(record);
+                dataItemKey = TableFieldEnum.Q.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(total));
+
+                dataList.add(dataItem);
+            }
+            BaseTableResponse<JSONObject> baseTableResponse = new BaseTableResponse<JSONObject>();
+            baseTableResponse.setColumnList(columnItemList);
+            baseTableResponse.setData(dataList);
+            return RestResp.createBySuccess(baseTableResponse);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return RestResp.createBy(RestResp.ERROR, "服务器内部错误");
+        }
+
+        //以下注释不要删，以后要用的
+/*        PhaseHolder reactivePowerResponseHolder = new PhaseHolder();
+
+        for (MeterRecord m : meterRecordList) {
+            reactivePowerResponseHolder.setPhaseA(m.getUa() * m.getIa() * (float) (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getPfa())))));
+            reactivePowerResponseHolder.setPhaseB(m.getUb() * m.getIb() * (float) (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getPfb())))));
+            reactivePowerResponseHolder.setPhaseC(m.getUc() * m.getIc() * (float) (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getPfc())))));
+            ReactivePowerResponse reactivePowerResponse = new ReactivePowerResponse();
+
+            reactivePowerResponse.setCreateAt(m.getCreateAt());
+            reactivePowerResponse.setReactivePowerA(reactivePowerResponseHolder.getPhaseA());
+            reactivePowerResponse.setReactivePowerB(reactivePowerResponseHolder.getPhaseB());
+            reactivePowerResponse.setReactivePowerC(reactivePowerResponseHolder.getPhaseC());
+            reactivePowerResponse.setReactivePowerTotal(reactivePowerResponseHolder.getPhaseA() + reactivePowerResponseHolder.getPhaseB()+ reactivePowerResponseHolder.getPhaseC());
+            reactivePowerResponseList.add(reactivePowerResponse);
+        }*/
+    }
+
+    @Override
+    public RestResp countFrequencyData(long createAt, GetElectricDataParam getElectricDataParam) {
+        // 自定义的表格列
+        TableFieldEnum[] fieldEnums = new TableFieldEnum[]{
+                TableFieldEnum.LOOP_NAME,
+                TableFieldEnum.COLECTION_TIME,
+                TableFieldEnum.F_R
+        };
+        HashMap<String, List> map = null;
+        try {
+            map = this.countCommon(createAt, fieldEnums);
+            List<MeterRecordDto> meterRecordList = map.get(DATA_KEY);
+            List<BaseColumnItem> columnItemList = map.get(COLUMN_KEY);
+            // 构造表格每一行的值
+            List<JSONObject> dataList = new LinkedList<>();
+            for (MeterRecordDto record : meterRecordList) {
+
+                JSONObject dataItem = new JSONObject();
+
+                String dataItemKey = TableFieldEnum.LOOP_NAME.getValue();
+                dataItem.put(dataItemKey, "主进线柜");
+
+                dataItemKey = TableFieldEnum.COLECTION_TIME.getValue();
+                dataItem.put(dataItemKey, record.getCreateAt());
+
+                // 暂时性使用这个方法
+                dataItemKey = TableFieldEnum.F_R.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(record.getFrequency()));
+
+                dataList.add(dataItem);
+            }
+            BaseTableResponse<JSONObject> baseTableResponse = new BaseTableResponse<JSONObject>();
+            baseTableResponse.setColumnList(columnItemList);
+            baseTableResponse.setData(dataList);
+            return RestResp.createBySuccess(baseTableResponse);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return RestResp.createBy(RestResp.ERROR, "服务器内部错误");
+        }
+    }
+
+    @Override
+    public RestResp countDegreeOfThreePhaseUnbalanceData(long createAt, GetElectricDataParam getElectricDataParam) {
+        // 自定义的表格列
+        TableFieldEnum[] fieldEnums = new TableFieldEnum[]{
+                TableFieldEnum.LOOP_NAME,
+                TableFieldEnum.COLECTION_TIME,
+                TableFieldEnum.I_UNB,
+                TableFieldEnum.U_UNB
+        };
+        HashMap<String, List> map = null;
+        try {
+            map = this.countCommon(createAt, fieldEnums);
+            List<MeterRecordDto> meterRecordList = map.get(DATA_KEY);
+            List<BaseColumnItem> columnItemList = map.get(COLUMN_KEY);
+            // 构造表格每一行的值
+            List<JSONObject> dataList = new LinkedList<>();
+            for (MeterRecordDto record : meterRecordList) {
+
+                JSONObject dataItem = new JSONObject();
+
+                String dataItemKey = TableFieldEnum.LOOP_NAME.getValue();
+                dataItem.put(dataItemKey, "主进线柜");
+
+                dataItemKey = TableFieldEnum.COLECTION_TIME.getValue();
+                dataItem.put(dataItemKey, record.getCreateAt());
+
+                dataItemKey = TableFieldEnum.I_UNB.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(MeterRecordCalculator.countCurrentThreePhaseUnbalanced(record)));
+                dataItemKey = TableFieldEnum.U_UNB.getValue();
+                dataItem.put(dataItemKey, decimalFormat.format(MeterRecordCalculator.countVoltageThreePhaseUnbalanced(record)));
+
+                dataList.add(dataItem);
+            }
+            BaseTableResponse<JSONObject> baseTableResponse = new BaseTableResponse<JSONObject>();
+            baseTableResponse.setColumnList(columnItemList);
+            baseTableResponse.setData(dataList);
+            return RestResp.createBySuccess(baseTableResponse);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return RestResp.createBy(RestResp.ERROR, "服务器内部错误");
+        }
     }
 
     /**
-     * 计算时间区间内的三相有功功率
+     * 根据枚举数据产生BaseColumnItem列表
      *
-     * @param startAt
-     * @param endAt
-     * @param getElectricDataParam
+     * @param fieldEnums
      * @return
      */
-    @Override
-    public RestResp countApparentPowerDataRange(long startAt, long endAt, GetElectricDataParam getElectricDataParam) {
-        List<MeterRecord> meterRecordList = getMeterRecordList(startAt, endAt);
-        List<ApparentPowerResponse> apparentPowerResponsesList = new ArrayList<>(meterRecordList.size());
-
-        /**
-         * factor = power / (ia * ua + ib * ub + ic * uc)
-         * pa = ia * ua * factor
-         * pb = ib * ub * factor
-         * pc = ic * uc * factor
-         */
-        PhaseHolder apparentPowerHolder = new PhaseHolder();
-        for (MeterRecord m : meterRecordList) {
-            apparentPowerHolder.setPhaseA(m.getIa() * m.getUa());
-            apparentPowerHolder.setPhaseB(m.getIb() * m.getUb());
-            apparentPowerHolder.setPhaseC(m.getIc() * m.getUc());
-
-            ApparentPowerResponse apparentPowerResponse = new ApparentPowerResponse();
-
-            apparentPowerResponse.setCreateAt(m.getCreateAt());
-            apparentPowerResponse.setApparentPowerA(MeterRecordCalculator.countApparentPowerA(m));
-            apparentPowerResponse.setApparentPowerB(MeterRecordCalculator.countApparentPowerB(m));
-            apparentPowerResponse.setApparentPowerC(MeterRecordCalculator.countApparentPowerC(m));
-            apparentPowerResponse.setApparentPowerTotal(MeterRecordCalculator.countApparentPowerTotal(m));
-
-            apparentPowerResponsesList.add(apparentPowerResponse);
+    private List<BaseColumnItem> produceColumnListAndIndex(TableFieldEnum[] fieldEnums) {
+        int columnLength = fieldEnums.length;
+        List<BaseColumnItem> columnItemList = new ArrayList<>(columnLength);
+        for (TableFieldEnum fieldEnum : fieldEnums) {
+            BaseColumnItem columnItem = new BaseColumnItem(fieldEnum.getName(), fieldEnum.getValue());
+            columnItemList.add(columnItem);
         }
-
-        return RestResp.createBySuccess(apparentPowerResponsesList);
+        return columnItemList;
     }
 
 
@@ -174,218 +582,6 @@ public class MeterRecordService implements IMeterRecordService {
         return RestResp.createBySuccess(temperatureResponsesList);
     }
 
-    @Override
-    public RestResp countPhaseCurrentData(long createAt, GetElectricDataParam getElectricDataParam) {
-        long remain = createAt + getRemainMillisSecondsOneDay(createAt);
-        return this.countPhaseCurrentDataRange(createAt, remain, getElectricDataParam);
-    }
-
-    @Override
-    public RestResp countPhaseCurrentDataRange(long startAt, long endAt, GetElectricDataParam getElectricDataParam) {
-        List<MeterRecord> meterRecordList = getMeterRecordList(startAt, endAt);
-        List<PhaseCurrentResponse> phaseCurrentResponseList = new ArrayList<>(meterRecordList.size());
-
-        for (MeterRecord m : meterRecordList) {
-
-            PhaseCurrentResponse phaseCurrentResponse = new PhaseCurrentResponse();
-
-            phaseCurrentResponse.setCreateAt(m.getCreateAt());
-            phaseCurrentResponse.setPhaseCurrentA(m.getIa());
-            phaseCurrentResponse.setPhaseCurrentB(m.getIb());
-            phaseCurrentResponse.setPhaseCurrentC(m.getIc());
-            phaseCurrentResponseList.add(phaseCurrentResponse);
-        }
-
-        return RestResp.createBySuccess(phaseCurrentResponseList);
-    }
-
-    @Override
-    public RestResp countPhaseVoltageData(long createAt, GetElectricDataParam getElectricDataParam) {
-        long remain = createAt + getRemainMillisSecondsOneDay(createAt);
-        return this.countPhaseVoltageDataRange(createAt, remain, getElectricDataParam);
-    }
-
-    @Override
-    public RestResp countPhaseVoltageDataRange(long startAt, long endAt, GetElectricDataParam getElectricDataParam) {
-        List<MeterRecord> meterRecordList = getMeterRecordList(startAt, endAt);
-        List<PhaseVoltageResponse> phaseVoltageResponseList = new ArrayList<>(meterRecordList.size());
-
-        for (MeterRecord m : meterRecordList) {
-
-            PhaseVoltageResponse phaseVoltageResponse = new PhaseVoltageResponse();
-
-            phaseVoltageResponse.setCreateAt(m.getCreateAt());
-            phaseVoltageResponse.setPhaseVoltageA(m.getUa());
-            phaseVoltageResponse.setPhaseVoltageB(m.getUb());
-            phaseVoltageResponse.setPhaseVoltageC(m.getUc());
-            phaseVoltageResponseList.add(phaseVoltageResponse);
-        }
-
-        return RestResp.createBySuccess(phaseVoltageResponseList);
-    }
-
-    @Override
-    public RestResp countLineVoltageData(long createAt, GetElectricDataParam getElectricDataParam) {
-        long remain = createAt + getRemainMillisSecondsOneDay(createAt);
-        return this.countLineVoltageDataRange(createAt, remain, getElectricDataParam);
-    }
-
-    @Override
-    public RestResp countLineVoltageDataRange(long startAt, long endAt, GetElectricDataParam getElectricDataParam) {
-        List<MeterRecord> meterRecordList = getMeterRecordList(startAt, endAt);
-        List<LineVoltageResponse> lineVoltageResponseList = new ArrayList<>(meterRecordList.size());
-
-        LineVoltageHolder lineVoltageHolder = new LineVoltageHolder();
-
-        for (MeterRecord m : meterRecordList) {
-//            lineVoltageHolder.setUab((float) (Math.sqrt(Math.pow(m.getUa(), 2)
-//                    + Math.pow(m.getUb(), 2)
-//                    - 2 * m.getUa() * m.getUb() * Math.cos(Math.PI * 2 / 3))));
-//
-//            lineVoltageHolder.setUbc((float) (Math.sqrt(Math.pow(m.getUb(), 2)
-//                    + Math.pow(m.getUc(), 2)
-//                    - 2 * m.getUb() * m.getUc() * Math.cos(Math.PI * 2 / 3))));
-//
-//            lineVoltageHolder.setUca((float) (Math.sqrt(Math.pow(m.getUc(), 2)
-//                    + Math.pow(m.getUa(), 2)
-//                    - 2 * m.getUc() * m.getUa() * Math.cos(Math.PI * 2 / 3))));
-
-            lineVoltageHolder.setUab(MeterRecordCalculator.countLineVoltageUab(m));
-            lineVoltageHolder.setUbc(MeterRecordCalculator.countLineVoltageUbc(m));
-            lineVoltageHolder.setUca(MeterRecordCalculator.countLineVoltageUca(m));
-
-            LineVoltageResponse lineVoltageResponse = new LineVoltageResponse();
-            lineVoltageResponse.setCreateAt(m.getCreateAt());
-            lineVoltageResponse.setUab(lineVoltageHolder.getUab());
-            lineVoltageResponse.setUbc(lineVoltageHolder.getUbc());
-            lineVoltageResponse.setUca(lineVoltageHolder.getUca());
-            lineVoltageResponseList.add(lineVoltageResponse);
-        }
-
-        return RestResp.createBySuccess(lineVoltageResponseList);
-    }
-
-    @Override
-    public RestResp countPowerFactorData(long createAt, GetElectricDataParam getElectricDataParam) {
-        long remain = createAt + getRemainMillisSecondsOneDay(createAt);
-        return this.countPowerFactorDataRange(createAt, remain, getElectricDataParam);
-    }
-
-    @Override
-    public RestResp countPowerFactorDataRange(long startAt, long endAt, GetElectricDataParam getElectricDataParam) {
-        List<MeterRecord> meterRecordList = getMeterRecordList(startAt, endAt);
-        List<PowerFactorResponse> powerFactorResponseList = new ArrayList<>(meterRecordList.size());
-
-        for (MeterRecord m : meterRecordList) {
-
-            PowerFactorResponse powerFactorResponse = new PowerFactorResponse();
-
-            powerFactorResponse.setCreateAt(m.getCreateAt());
-            powerFactorResponse.setPowerFactorA(m.getPfa());
-            powerFactorResponse.setPowerFactorB(m.getPfb());
-            powerFactorResponse.setPowerFactorC(m.getPfc());
-            powerFactorResponse.setPowerFactorTotal(m.getPfa() + m.getPfb() + m.getPfc());
-            powerFactorResponseList.add(powerFactorResponse);
-        }
-
-        return RestResp.createBySuccess(powerFactorResponseList);
-    }
-
-    @Override
-    public RestResp countReactivePowerData(long createAt, GetElectricDataParam getElectricDataParam) {
-        long remain = createAt + getRemainMillisSecondsOneDay(createAt);
-        return this.countReactivePowerDataRange(createAt, remain, getElectricDataParam);
-    }
-
-    @Override
-    public RestResp countReactivePowerDataRange(long startAt, long endAt, GetElectricDataParam getElectricDataParam) {
-        List<MeterRecord> meterRecordList = getMeterRecordList(startAt, endAt);
-        List<ReactivePowerResponse> reactivePowerResponseList = new ArrayList<>(meterRecordList.size());
-
-        for (MeterRecord m : meterRecordList) {
-            ReactivePowerResponse reactivePowerResponse = new ReactivePowerResponse();
-            //暂时性使用这个方法
-            reactivePowerResponse.setReactivePowerTotal(MeterRecordCalculator.countReactivePowerTotalTest(m));
-
-
-        }
-
-
-        //以下注释不要删，以后要用的
-/*        PhaseHolder reactivePowerResponseHolder = new PhaseHolder();
-
-        for (MeterRecord m : meterRecordList) {
-            reactivePowerResponseHolder.setPhaseA(m.getUa() * m.getIa() * (float) (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getPfa())))));
-            reactivePowerResponseHolder.setPhaseB(m.getUb() * m.getIb() * (float) (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getPfb())))));
-            reactivePowerResponseHolder.setPhaseC(m.getUc() * m.getIc() * (float) (-Math.cos(Math.PI / 2 + Math.toDegrees(Math.acos(m.getPfc())))));
-            ReactivePowerResponse reactivePowerResponse = new ReactivePowerResponse();
-
-            reactivePowerResponse.setCreateAt(m.getCreateAt());
-            reactivePowerResponse.setReactivePowerA(reactivePowerResponseHolder.getPhaseA());
-            reactivePowerResponse.setReactivePowerB(reactivePowerResponseHolder.getPhaseB());
-            reactivePowerResponse.setReactivePowerC(reactivePowerResponseHolder.getPhaseC());
-            reactivePowerResponse.setReactivePowerTotal(reactivePowerResponseHolder.getPhaseA() + reactivePowerResponseHolder.getPhaseB()+ reactivePowerResponseHolder.getPhaseC());
-            reactivePowerResponseList.add(reactivePowerResponse);
-        }*/
-
-        return RestResp.createBySuccess(reactivePowerResponseList);
-    }
-
-    @Override
-    public RestResp countFrequencyData(long createAt, GetElectricDataParam getElectricDataParam) {
-        long remain = createAt + getRemainMillisSecondsOneDay(createAt);
-        return this.countFrequencyDataRange(createAt, remain, getElectricDataParam);
-    }
-
-    @Override
-    public RestResp countFrequencyDataRange(long startAt, long endAt, GetElectricDataParam getElectricDataParam) {
-        List<MeterRecord> meterRecordList = getMeterRecordList(startAt, endAt);
-        List<FrequencyResponse> frequencyResponseList = new ArrayList<>(meterRecordList.size());
-
-
-        for (MeterRecord m : meterRecordList) {
-            FrequencyResponse frequencyResponse = new FrequencyResponse();
-            frequencyResponse.setCreateAt(m.getCreateAt());
-            frequencyResponse.setFrequency(m.getFrequency());
-            frequencyResponseList.add(frequencyResponse);
-
-        }
-        return RestResp.createBySuccess(frequencyResponseList);
-    }
-
-    @Override
-    public RestResp countDegreeOfThreePhaseUnbalanceData(long createAt, GetElectricDataParam getElectricDataParam) {
-        long remain = createAt + getRemainMillisSecondsOneDay(createAt);
-        return this.countDegreeOfThreePhaseUnbalanceDataRange(createAt, remain, getElectricDataParam);
-    }
-
-    @Override
-    public RestResp countDegreeOfThreePhaseUnbalanceDataRange(long startAt, long endAt, GetElectricDataParam getElectricDataParam) {
-        List<MeterRecord> meterRecordList = getMeterRecordList(startAt, endAt);
-        List<DegreeOfThreePhaseUnbalanceResponse> degreeOfThreePhaseUnbalanceResponseList = new ArrayList<>(meterRecordList.size());
-
-        DegreeOfThreePhaseUnbalanceHolder degreeOfThreePhaseUnbalanceHolder = new DegreeOfThreePhaseUnbalanceHolder();
-
-//        float voltageTotal;
-//        float currentTotal;
-
-        for (MeterRecord m : meterRecordList) {
-            DegreeOfThreePhaseUnbalanceResponse degreeOfThreePhaseUnbalanceResponse = new DegreeOfThreePhaseUnbalanceResponse();
-//            degreeOfThreePhaseUnbalanceResponse.setCreateAt(m.getCreateAt());
-//            voltageTotal = m.getUa() + m.getUb() + m.getUc();
-//            degreeOfThreePhaseUnbalanceHolder.setUUnb((Math.max(Math.max(m.getUa(), m.getUb()), m.getUc()) - voltageTotal) / voltageTotal);
-//
-//            currentTotal = m.getIa() + m.getIb() + m.getIc();
-//            degreeOfThreePhaseUnbalanceHolder.setIUnb((Math.max(Math.max(m.getIa(), m.getIb()), m.getIc()) - currentTotal) / currentTotal);
-//
-
-            degreeOfThreePhaseUnbalanceResponse.setUUnB(MeterRecordCalculator.countVoltageThreePhaseUnbalanced(m));
-            degreeOfThreePhaseUnbalanceResponse.setIUnB(MeterRecordCalculator.countCurrentThreePhaseUnbalanced(m));
-            degreeOfThreePhaseUnbalanceResponseList.add(degreeOfThreePhaseUnbalanceResponse);
-
-        }
-        return RestResp.createBySuccess(degreeOfThreePhaseUnbalanceResponseList);
-    }
 
     @Override
     public RestResp countActivePowerMaxAvgMin(long startAt, long endAt) {
@@ -437,40 +633,27 @@ public class MeterRecordService implements IMeterRecordService {
      */
     @Override
     public RestResp producePowerLimitReport(long createAt, String createAtFormat, String sqlFormat) {
+        // 将前端传来的时间戳转换为与sqlFormat格式相同的时间字符串格式
         String createAtString = DateFormatUtil.formatDateTo(createAt, createAtFormat);
         try {
-            // 响应对象和电表之间的索引，方便查找装载数据
-            HashMap<String, PowerReportResponse> powerReportResponseHashMap = new HashMap<>();
             List<LimitMaxAvgMin> limitMaxAvgMinList = new LinkedList<>();
 
             // 查找有功功率的最大值最小值平均值并填充
-            List<LimitReportDto> maxList = meterRecordRepository.findMaxActivePowerByCreateAt(sqlFormat, createAtString);
-            List<LimitReportDto> minList = meterRecordRepository.findMinActivePowerByCreateAt(sqlFormat, createAtString);
-            List<LimitReportDto> avgList = meterRecordRepository.findAvgActivePowerByCreateAt(sqlFormat, createAtString);
-            List<LimitMaxAvgMinItem> itemList = this.assembleReportItemValue(maxList, avgList, minList);
-            LimitMaxAvgMin limitMaxAvgMin = new LimitMaxAvgMin();
-            limitMaxAvgMin.setListDesc("有功功率");
-            limitMaxAvgMin.setList(itemList);
+            String dataType = "ActivePower";
+            String listDesc = "有功功率";
+            LimitMaxAvgMin limitMaxAvgMin = this.produceLimitItem(dataType, listDesc, sqlFormat, createAtString);
             limitMaxAvgMinList.add(limitMaxAvgMin);
 
             // 查找无功功率的最大值最小值平均值并填充
-            maxList = meterRecordRepository.findMaxReactivePowerByCreateAt(sqlFormat, createAtString);
-            minList = meterRecordRepository.findMinReactivePowerByCreateAt(sqlFormat, createAtString);
-            avgList = meterRecordRepository.findAvgReactivePowerByCreateAt(sqlFormat, createAtString);
-            itemList = this.assembleReportItemValue(maxList, avgList, minList);
-            limitMaxAvgMin = new LimitMaxAvgMin();
-            limitMaxAvgMin.setListDesc("无功功率");
-            limitMaxAvgMin.setList(itemList);
+            dataType = "ReactivePower";
+            listDesc = "无功功率";
+            limitMaxAvgMin = this.produceLimitItem(dataType, listDesc, sqlFormat, createAtString);
             limitMaxAvgMinList.add(limitMaxAvgMin);
 
             // 查找视在功率的最大值最小值平均值并填充
-            maxList = meterRecordRepository.findMaxApparentPowerByCreateAt(sqlFormat, createAtString);
-            minList = meterRecordRepository.findMinApparentPowerByCreateAt(sqlFormat, createAtString);
-            avgList = meterRecordRepository.findAvgApparentPowerByCreateAt(sqlFormat, createAtString);
-            itemList = this.assembleReportItemValue(maxList, avgList, minList);
-            limitMaxAvgMin = new LimitMaxAvgMin();
-            limitMaxAvgMin.setListDesc("视在功率");
-            limitMaxAvgMin.setList(itemList);
+            dataType = "ApparentPower";
+            listDesc = "视在功率";
+            limitMaxAvgMin = this.produceLimitItem(dataType, listDesc, sqlFormat, createAtString);
             limitMaxAvgMinList.add(limitMaxAvgMin);
 
             return RestResp.createBySuccess(limitMaxAvgMinList);
@@ -484,38 +667,26 @@ public class MeterRecordService implements IMeterRecordService {
     public RestResp produceElectricCurrentLimitReport(long createAt, String createAtFormat, String sqlFormat) {
         String createAtString = DateFormatUtil.formatDateTo(createAt, createAtFormat);
         try {
-            // 响应对象和电表之间的索引，方便查找装载数据
-            HashMap<String, ElectricCurrentReportResponse> electricCurrentHashMap = new HashMap<>();
+            List<LimitMaxAvgMin> limitMaxAvgMinList = new LinkedList<>();
             // 查找A相电流的最大值最小值平均值并填充
-            String methodType = "Ia";
-            List<LimitReportDto> limitReportDtoList = meterRecordRepository.findMaxIaByCreateAt(sqlFormat, createAtString);
-            assembleReportMaxValue(limitReportDtoList, electricCurrentHashMap, methodType, ElectricCurrentReportResponse.class);
-            limitReportDtoList = meterRecordRepository.findMinIaByCreateAt(sqlFormat, createAtString);
-            assembleReportMinValue(limitReportDtoList, electricCurrentHashMap, methodType);
-            limitReportDtoList = meterRecordRepository.findAvgIaByCreateAt(sqlFormat, createAtString);
-            assembleReportAvgValue(limitReportDtoList, electricCurrentHashMap, methodType);
+            String dataType = "Ia";
+            String listDesc = "A相电流";
+            LimitMaxAvgMin limitMaxAvgMin = this.produceLimitItem(dataType, listDesc, sqlFormat, createAtString);
+            limitMaxAvgMinList.add(limitMaxAvgMin);
 
             // 查找B相电流的最大值最小值平均值并填充
-            methodType = "Ib";
-            limitReportDtoList = meterRecordRepository.findMaxIbByCreateAt(sqlFormat, createAtString);
-            assembleReportMaxValue(limitReportDtoList, electricCurrentHashMap, methodType, ElectricCurrentReportResponse.class);
-            limitReportDtoList = meterRecordRepository.findMinIbByCreateAt(sqlFormat, createAtString);
-            assembleReportMinValue(limitReportDtoList, electricCurrentHashMap, methodType);
-            limitReportDtoList = meterRecordRepository.findAvgIbByCreateAt(sqlFormat, createAtString);
-            assembleReportAvgValue(limitReportDtoList, electricCurrentHashMap, methodType);
+            dataType = "Ib";
+            listDesc = "B相电流";
+            limitMaxAvgMin = this.produceLimitItem(dataType, listDesc, sqlFormat, createAtString);
+            limitMaxAvgMinList.add(limitMaxAvgMin);
 
             // 查找C相电流的最大值最小值平均值并填充
-            methodType = "Ic";
-            limitReportDtoList = meterRecordRepository.findMaxIcByCreateAt(sqlFormat, createAtString);
-            assembleReportMaxValue(limitReportDtoList, electricCurrentHashMap, methodType, ElectricCurrentReportResponse.class);
-            limitReportDtoList = meterRecordRepository.findMinIcByCreateAt(sqlFormat, createAtString);
-            assembleReportMinValue(limitReportDtoList, electricCurrentHashMap, methodType);
-            limitReportDtoList = meterRecordRepository.findAvgIcByCreateAt(sqlFormat, createAtString);
-            assembleReportAvgValue(limitReportDtoList, electricCurrentHashMap, methodType);
-
+            dataType = "Ic";
+            listDesc = "C相电流";
+            limitMaxAvgMin = this.produceLimitItem(dataType, listDesc, sqlFormat, createAtString);
+            limitMaxAvgMinList.add(limitMaxAvgMin);
             //构造给前端的数据
-            List<ElectricCurrentReportResponse> electricCurrentList = this.processHashMapGetList(electricCurrentHashMap);
-            return RestResp.createBySuccess(electricCurrentList);
+            return RestResp.createBySuccess(limitMaxAvgMinList);
         } catch (Exception e) {
             e.printStackTrace();
             return RestResp.createBy(RestResp.ERROR, "产生内部错误，来源：极值报表统计");
@@ -526,38 +697,28 @@ public class MeterRecordService implements IMeterRecordService {
     public RestResp producePhaseVoltageLimitReport(long createAt, String createAtFormat, String sqlFormat) {
         String createAtString = DateFormatUtil.formatDateTo(createAt, createAtFormat);
         try {
-            // 响应对象和电表之间的索引，方便查找装载数据
-            HashMap<String, PhaseVoltageReportResponse> phaseVoltageReportHashMap = new HashMap<>();
+            List<LimitMaxAvgMin> limitMaxAvgMinList = new LinkedList<>();
+
             // 查找A相电压的最大值最小值平均值并填充
-            String methodType = "Ua";
-            List<LimitReportDto> limitReportDtoList = meterRecordRepository.findMaxUaByCreateAt(sqlFormat, createAtString);
-            assembleReportMaxValue(limitReportDtoList, phaseVoltageReportHashMap, methodType, PhaseVoltageReportResponse.class);
-            limitReportDtoList = meterRecordRepository.findMinUaByCreateAt(sqlFormat, createAtString);
-            assembleReportMinValue(limitReportDtoList, phaseVoltageReportHashMap, methodType);
-            limitReportDtoList = meterRecordRepository.findAvgUaByCreateAt(sqlFormat, createAtString);
-            assembleReportAvgValue(limitReportDtoList, phaseVoltageReportHashMap, methodType);
+            String dataType = "Ua";
+            String listDesc = "A相电压";
+            LimitMaxAvgMin limitMaxAvgMin = this.produceLimitItem(dataType, listDesc, sqlFormat, createAtString);
+            limitMaxAvgMinList.add(limitMaxAvgMin);
 
             // 查找B相电压的最大值最小值平均值并填充
-            methodType = "Ub";
-            limitReportDtoList = meterRecordRepository.findMaxUbByCreateAt(sqlFormat, createAtString);
-            assembleReportMaxValue(limitReportDtoList, phaseVoltageReportHashMap, methodType, PhaseVoltageReportResponse.class);
-            limitReportDtoList = meterRecordRepository.findMinUbByCreateAt(sqlFormat, createAtString);
-            assembleReportMinValue(limitReportDtoList, phaseVoltageReportHashMap, methodType);
-            limitReportDtoList = meterRecordRepository.findAvgUbByCreateAt(sqlFormat, createAtString);
-            assembleReportAvgValue(limitReportDtoList, phaseVoltageReportHashMap, methodType);
+            dataType = "Ub";
+            listDesc = "B相电压";
+            limitMaxAvgMin = this.produceLimitItem(dataType, listDesc, sqlFormat, createAtString);
+            limitMaxAvgMinList.add(limitMaxAvgMin);
 
             // 查找C相电压的最大值最小值平均值并填充
-            methodType = "Uc";
-            limitReportDtoList = meterRecordRepository.findMaxUcByCreateAt(sqlFormat, createAtString);
-            assembleReportMaxValue(limitReportDtoList, phaseVoltageReportHashMap, methodType, PhaseVoltageReportResponse.class);
-            limitReportDtoList = meterRecordRepository.findMinUcByCreateAt(sqlFormat, createAtString);
-            assembleReportMinValue(limitReportDtoList, phaseVoltageReportHashMap, methodType);
-            limitReportDtoList = meterRecordRepository.findAvgUcByCreateAt(sqlFormat, createAtString);
-            assembleReportAvgValue(limitReportDtoList, phaseVoltageReportHashMap, methodType);
+            dataType = "Uc";
+            listDesc = "C相电压";
+            limitMaxAvgMin = this.produceLimitItem(dataType, listDesc, sqlFormat, createAtString);
+            limitMaxAvgMinList.add(limitMaxAvgMin);
 
             //构造给前端的数据
-            List<PhaseVoltageReportResponse> electricCurrentList = this.processHashMapGetList(phaseVoltageReportHashMap);
-            return RestResp.createBySuccess(electricCurrentList);
+            return RestResp.createBySuccess(limitMaxAvgMinList);
         } catch (Exception e) {
             e.printStackTrace();
             return RestResp.createBy(RestResp.ERROR, "产生内部错误，来源：极值报表统计");
@@ -568,80 +729,83 @@ public class MeterRecordService implements IMeterRecordService {
     public RestResp produceLineVoltageLimitReport(long createAt, String createAtFormat, String sqlFormat) {
         String createAtString = DateFormatUtil.formatDateTo(createAt, createAtFormat);
         try {
+            List<LimitMaxAvgMin> limitMaxAvgMinList = new LinkedList<>();
+
             // 响应对象和电表之间的索引，方便查找装载数据
             HashMap<String, LineVoltageReportResponse> lineVoltageReportHashMap = new HashMap<>();
             // 查找A相电压的最大值最小值平均值并填充
-            String methodType = "Uab";
-            List<LimitReportDto> limitReportDtoList = meterRecordRepository.findMaxUabByCreateAt(sqlFormat, createAtString);
-            assembleReportMaxValue(limitReportDtoList, lineVoltageReportHashMap, methodType, LineVoltageReportResponse.class);
-            limitReportDtoList = meterRecordRepository.findMinUabByCreateAt(sqlFormat, createAtString);
-            assembleReportMinValue(limitReportDtoList, lineVoltageReportHashMap, methodType);
-            limitReportDtoList = meterRecordRepository.findAvgUabByCreateAt(sqlFormat, createAtString);
-            assembleReportAvgValue(limitReportDtoList, lineVoltageReportHashMap, methodType);
+            String dataType = "Uab";
+            String listDesc = "AB线电压";
+            LimitMaxAvgMin limitMaxAvgMin = this.produceLimitItem(dataType, listDesc, sqlFormat, createAtString);
+            limitMaxAvgMinList.add(limitMaxAvgMin);
 
             // 查找B相电压的最大值最小值平均值并填充
-            methodType = "Ubc";
-            limitReportDtoList = meterRecordRepository.findMaxUbcByCreateAt(sqlFormat, createAtString);
-            assembleReportMaxValue(limitReportDtoList, lineVoltageReportHashMap, methodType, LineVoltageReportResponse.class);
-            limitReportDtoList = meterRecordRepository.findMinUbcByCreateAt(sqlFormat, createAtString);
-            assembleReportMinValue(limitReportDtoList, lineVoltageReportHashMap, methodType);
-            limitReportDtoList = meterRecordRepository.findAvgUbcByCreateAt(sqlFormat, createAtString);
-            assembleReportAvgValue(limitReportDtoList, lineVoltageReportHashMap, methodType);
+            dataType = "Ubc";
+            listDesc = "BC线电压";
+            limitMaxAvgMin = this.produceLimitItem(dataType, listDesc, sqlFormat, createAtString);
+            limitMaxAvgMinList.add(limitMaxAvgMin);
 
             // 查找C相电压的最大值最小值平均值并填充
-            methodType = "Uca";
-            limitReportDtoList = meterRecordRepository.findMaxUcaByCreateAt(sqlFormat, createAtString);
-            assembleReportMaxValue(limitReportDtoList, lineVoltageReportHashMap, methodType, LineVoltageReportResponse.class);
-            limitReportDtoList = meterRecordRepository.findMinUcaByCreateAt(sqlFormat, createAtString);
-            assembleReportMinValue(limitReportDtoList, lineVoltageReportHashMap, methodType);
-            limitReportDtoList = meterRecordRepository.findAvgUcaByCreateAt(sqlFormat, createAtString);
-            assembleReportAvgValue(limitReportDtoList, lineVoltageReportHashMap, methodType);
+            dataType = "Uca";
+            listDesc = "CA线电压";
+            limitMaxAvgMin = this.produceLimitItem(dataType, listDesc, sqlFormat, createAtString);
+            limitMaxAvgMinList.add(limitMaxAvgMin);
 
             //构造给前端的数据
-            List<LineVoltageReportResponse> electricCurrentList = this.processHashMapGetList(lineVoltageReportHashMap);
-            return RestResp.createBySuccess(electricCurrentList);
+            return RestResp.createBySuccess(limitMaxAvgMinList);
         } catch (Exception e) {
             e.printStackTrace();
             return RestResp.createBy(RestResp.ERROR, "产生内部错误，来源：极值报表统计");
         }
     }
 
-    private <T> List<T> processHashMapGetList(HashMap<String, T> tHashMap) {
-        List<T> tList = new LinkedList<>();
-        for (String s : tHashMap.keySet()) {
-            tList.add(tHashMap.get(s));
-        }
-        return tList;
-    }
 
     /**
-     * 根据maxMethodName的名字去设置最大值
-     * 利用反射，找到到setMax[type]的方法，并设置值，其中type为自定义
+     * 利用dataType获取最大、最小、平均值，封装成LimitMaxAvgMin对象
+     * <p>
+     * 约定：
+     * MeterRecordRepository内的方法名
+     * 统一以 find[Max|Min|Avg] 开头
+     * 中间为类型：如activePower代表有功功率
+     * 统一以 ByCreateAt 结尾
      *
-     * @param limitReportDtoList
-     * @param powerReportResponseHashMap
-     * @param type
+     * @param dataType       数据的类型
+     * @param listDesc       对数据的中文描述
+     * @param sqlFormat      sql时间格式
+     * @param createAtString 查询时间
+     * @return
      * @throws NoSuchMethodException
      * @throws IllegalAccessException
      * @throws InvocationTargetException
      */
-    private <T> void assembleReportMaxValue(List<LimitReportDto> limitReportDtoList,
-                                            HashMap<String, T> powerReportResponseHashMap,
-                                            String type, Class<T> tClass) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        Constructor cla = tClass.getDeclaredConstructor(String.class, String.class);
-        for (LimitReportDto limitReportDto : limitReportDtoList) {
-            T itemObj = powerReportResponseHashMap.get(limitReportDto.getMeter());
-            if (itemObj == null) {
-                itemObj = (T) cla.newInstance(limitReportDto.getMeter(), limitReportDto.getCreateAt().substring(0, 10));
-            }
-            String maxMethodName = "setMax" + type;
-            AutoAssembleUtil
-                    .assembleBySpecifiedMethod(itemObj, maxMethodName, limitReportDto.getLimitValue());
-            maxMethodName = "setMax" + type + "CreateAt";
-            AutoAssembleUtil
-                    .assembleBySpecifiedMethod(itemObj, maxMethodName, limitReportDto.getCreateAt());
-            powerReportResponseHashMap.put(limitReportDto.getMeter(), itemObj);
-        }
+    private LimitMaxAvgMin produceLimitItem(String dataType, String listDesc, String sqlFormat, String createAtString) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        String maxMethod = "findMax" + dataType + "ByCreateAt";
+        String minMethod = "findMin" + dataType + "ByCreateAt";
+        String avgMethod = "findAvg" + dataType + "ByCreateAt";
+        List<LimitReportDto> maxList = (List<LimitReportDto>) invokeMeterRecordByTwoStringParam(maxMethod, sqlFormat, createAtString);
+        List<LimitReportDto> minList = (List<LimitReportDto>) invokeMeterRecordByTwoStringParam(minMethod, sqlFormat, createAtString);
+        List<LimitReportDto> avgList = (List<LimitReportDto>) invokeMeterRecordByTwoStringParam(avgMethod, sqlFormat, createAtString);
+        List<LimitMaxAvgMinItem> itemList = this.assembleReportItemValue(maxList, avgList, minList);
+        LimitMaxAvgMin limitMaxAvgMin = new LimitMaxAvgMin();
+        limitMaxAvgMin.setListDesc(listDesc);
+        limitMaxAvgMin.setList(itemList);
+        return limitMaxAvgMin;
+    }
+
+    /**
+     * 调用MeterRecordRepository中，参数为两个字符串的方法，根据methodName
+     *
+     * @param methodName
+     * @param sqlFormat
+     * @param createAtString
+     * @return
+     * @throws NoSuchMethodException
+     * @throws InvocationTargetException
+     * @throws IllegalAccessException
+     */
+    private Object invokeMeterRecordByTwoStringParam(String methodName, String sqlFormat, String createAtString) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Method method = MeterRecordRepository.class.getMethod(methodName, String.class, String.class);
+        return method.invoke(meterRecordRepository, sqlFormat, createAtString);
     }
 
     private List<LimitMaxAvgMinItem> assembleReportItemValue(List<LimitReportDto> maxList,
@@ -685,28 +849,6 @@ public class MeterRecordService implements IMeterRecordService {
         return item;
     }
 
-    private <T> void assembleReportMinValue(List<LimitReportDto> limitReportDtoList,
-                                            HashMap<String, T> powerReportResponseHashMap,
-                                            String type) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        for (LimitReportDto limitReportDto : limitReportDtoList) {
-            T itemObj = powerReportResponseHashMap.get(limitReportDto.getMeter());
-            AutoAssembleUtil
-                    .assembleBySpecifiedMethod(itemObj, "setMin" + type, limitReportDto.getLimitValue());
-            AutoAssembleUtil
-                    .assembleBySpecifiedMethod(itemObj, "setMin" + type + "CreateAt", limitReportDto.getCreateAt());
-        }
-    }
-
-    private <T> void assembleReportAvgValue(List<LimitReportDto> limitReportDtoList,
-                                            HashMap<String, T> powerReportResponseHashMap,
-                                            String type) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        for (LimitReportDto limitReportDto : limitReportDtoList) {
-            T itemObj = powerReportResponseHashMap.get(limitReportDto.getMeter());
-            AutoAssembleUtil.assembleBySpecifiedMethod(itemObj, "setAvg" + type, limitReportDto.getLimitValue());
-        }
-    }
-
-
     private long getRemainMillisSecondsOneDay(long currentTimestamp) {
         LocalDateTime midnight = LocalDateTime.ofInstant(Instant.ofEpochMilli(currentTimestamp),
                 ZoneId.systemDefault()).plusDays(1).withHour(0).withMinute(0)
@@ -716,10 +858,11 @@ public class MeterRecordService implements IMeterRecordService {
         return ChronoUnit.MILLIS.between(currentDateTime, midnight);
     }
 
-    private List<MeterRecord> getMeterRecordList(long startAt, long endAt) {
-        return meterRecordRepository.findByCreateAtGreaterThanEqualAndCreateAtLessThanEqual(new Timestamp(startAt), new Timestamp(endAt));
-
+    private List<MeterRecordDto> getMeterRecordDtoListByCreateAt(String createAt) {
+        return meterRecordRepository.findByCreateAtAndMinuteInterval(createAt, 5);
     }
 
-
+    private List<MeterRecord> getMeterRecordList(long startAt, long endAt) {
+        return meterRecordRepository.findByCreateAtGreaterThanEqualAndCreateAtLessThanEqual(new Timestamp(startAt), new Timestamp(endAt));
+    }
 }

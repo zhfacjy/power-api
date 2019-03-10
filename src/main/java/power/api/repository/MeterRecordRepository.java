@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import power.api.dto.LimitReportDto;
 import power.api.dto.MaxAvgMinDto;
+import power.api.dto.MeterRecordDto;
 import power.api.dto.PhaseVoltageReportDto;
 import power.api.model.MeterRecord;
 
@@ -23,6 +24,29 @@ public interface MeterRecordRepository extends JpaRepository<MeterRecord, Intege
      * @return
      */
     List<MeterRecord> findByCreateAtGreaterThanEqualAndCreateAtLessThanEqual(Timestamp startAt, Timestamp endAt);
+
+    @Query(value = "SELECT " +
+            "  AVG(mr.ua)              AS ua, " +
+            "  AVG(mr.ub)              AS ub, " +
+            "  AVG(mr.uc)              AS uc, " +
+            "  AVG(mr.ia)              AS ia, " +
+            "  AVG(mr.ib)              AS ib, " +
+            "  AVG(mr.ic)              AS ic, " +
+            "  AVG(mr.active_power)    AS activePower, " +
+            "  AVG(mr.temperature)     AS temperature, " +
+            "  AVG(mr.frequency)       AS frequency, " +
+            "  AVG(mr.electric_energy) AS electricEnergy, " +
+            "  AVG(mr.pfa)             AS pfa, " +
+            "  AVG(mr.pfb)             AS pfb, " +
+            "  AVG(mr.pfc)             AS pfc, " +
+            "  AVG(mr.current_limit)   AS currentLimit, " +
+            "  date_add(:createAt, INTERVAL :minuteInterval * floor(timestampdiff(MINUTE, :createAt, mr.create_at) / :minuteInterval) " +
+            "           MINUTE)        AS createAt " +
+            "FROM meter_record mr " +
+            "WHERE date_format(mr.create_at, '%Y-%m-%d') = date_format(:createAt, '%Y-%m-%d') " +
+            "GROUP BY floor(timestampdiff(MINUTE, :createAt, mr.create_at) / :minuteInterval)", nativeQuery = true)
+    List<MeterRecordDto> findByCreateAtAndMinuteInterval(@Param("createAt") String createAt,
+                                                         @Param("minuteInterval") int minuteInterval);
 
     /**
      * 计算有功功率的最大值、平均值、最小值
@@ -45,7 +69,8 @@ public interface MeterRecordRepository extends JpaRepository<MeterRecord, Intege
             "WHERE mr.create_at >= :startAt " +
             "      AND mr.create_at <= :endAt " +
             "GROUP BY createAt", nativeQuery = true)
-    List<MaxAvgMinDto> findMaxAvgMinByPower(@Param("startAt") Timestamp startAt, @Param("endAt") Timestamp endAt);
+    List<MaxAvgMinDto> findMaxAvgMinByPower(@Param("startAt") Timestamp startAt,
+                                            @Param("endAt") Timestamp endAt);
 
 
     /**

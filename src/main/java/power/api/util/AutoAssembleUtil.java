@@ -2,17 +2,18 @@ package power.api.util;
 
 import power.api.controller.responseModel.powerMonitoring.runningReport.LineReportItem;
 import power.api.controller.responseModel.powerMonitoring.runningReport.PhaseReportItem;
+import power.api.repository.MeterRecordRepository;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * 自动填充相同成员工具
  */
 public class AutoAssembleUtil {
-
     /**
      * 将withDataObj中与emptyObj同名的属性合并到emptyObj中
      * <p>
@@ -38,6 +39,17 @@ public class AutoAssembleUtil {
         }
     }
 
+    /**
+     * 根据方法名和方法中第一个参数的类型，查找并调用该方法
+     *
+     * @param o
+     * @param methodName
+     * @param value
+     * @param <T>
+     * @throws NoSuchMethodException
+     * @throws InvocationTargetException
+     * @throws IllegalAccessException
+     */
     public static <T> void assembleBySpecifiedMethod(Object o, String methodName, T value) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Method method = o.getClass().getDeclaredMethod(methodName, value.getClass());
         method.invoke(o, value);

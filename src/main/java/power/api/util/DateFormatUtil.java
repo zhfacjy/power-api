@@ -10,6 +10,9 @@ public class DateFormatUtil {
     final public static String HOUR_FORMAT = "yyyy-MM-dd HH";
     final public static String MINUTE_FORMAT = "yyyy-MM-dd HH:mm";
     final public static String SECOND_FORMAT = "yyyy-MM-dd HH:mm:ss";
+    final public static String SIMPLE_HOUR_FORMAT = "HH:mm:ss";
+    final public static String SIMPLE_MINUTE_FORMAT = "HH:mm";
+    final public static String SIMPLE_SECOND_FORMAT = "HH:mm:ss";
 
     public static String formatDateTo(Date date, String format) {
         return (new SimpleDateFormat(format)).format(date);

@@ -1,6 +1,7 @@
 package power.api.util.meterRecordCalculator;
 
 import org.hibernate.internal.util.MathHelper;
+import power.api.dto.MeterRecordDto;
 import power.api.model.MeterRecord;
 
 /**
@@ -212,5 +213,153 @@ public class MeterRecordCalculator implements IMeterRecordCalculator {
 
     }
 
+
+    /**
+     * DTO版本
+     */
+
+
+    /**
+     * @param meterRecord
+     * @return 三相电压之和
+     */
+    public static float countPhaseVoltageTotal(MeterRecordDto meterRecord) {
+        return instance.sumOfThreeNums(meterRecord.getUa(), meterRecord.getUb(), meterRecord.getUc());
+    }
+
+    /**
+     * @param meterRecord
+     * @return 三相电流之和
+     */
+    public static float countPhaseCurrentTotal(MeterRecordDto meterRecord) {
+        return instance.sumOfThreeNums(meterRecord.getIa(), meterRecord.getIb(), meterRecord.getIc());
+    }
+
+    /**
+     * @param meterRecord
+     * @return 三相功率因数之和
+     */
+    public static float countPowerFactorTotal(MeterRecordDto meterRecord) {
+        return instance.sumOfThreeNums(meterRecord.getPfa(), meterRecord.getPfb(), meterRecord.getPfc());
+    }
+
+    //视在功率
+    public static float countApparentPowerA(MeterRecordDto meterRecord) {
+        return instance.countApparentPower(meterRecord.getUa(), meterRecord.getIa());
+
+    }
+
+    public static float countApparentPowerB(MeterRecordDto meterRecord) {
+        return instance.countApparentPower(meterRecord.getUb(), meterRecord.getIb());
+
+    }
+
+    public static float countApparentPowerC(MeterRecordDto meterRecord) {
+        return instance.countApparentPower(meterRecord.getUc(), meterRecord.getIc());
+
+    }
+
+    public static float countApparentPowerTotal(MeterRecordDto meterRecord) {
+        return instance.countApparentPowerA(meterRecord) + countApparentPowerB(meterRecord) + countApparentPowerC(meterRecord);
+
+    }
+
+    /**
+     * 计算Uab
+     *
+     * @param meterRecord
+     * @return
+     */
+    public static float countLineVoltageUab(MeterRecordDto meterRecord) {
+        return instance.countLineVoltage(meterRecord.getUa(), meterRecord.getUb());
+    }
+
+    /**
+     * 计算Ubc
+     *
+     * @param meterRecord
+     * @return
+     */
+    public static float countLineVoltageUbc(MeterRecordDto meterRecord) {
+        return instance.countLineVoltage(meterRecord.getUb(), meterRecord.getUc());
+    }
+
+    /**
+     * 计算Uca
+     *
+     * @param meterRecord
+     * @return
+     */
+    public static float countLineVoltageUca(MeterRecordDto meterRecord) {
+        return instance.countLineVoltage(meterRecord.getUc(), meterRecord.getUa());
+    }
+
+    //有功功率
+    public static float countActivePowerA(MeterRecordDto meterRecord) {
+        return instance.countActivePower(countApparentPowerA(meterRecord), meterRecord.getPfa());
+
+    }
+
+    public static float countActivePowerB(MeterRecordDto meterRecord) {
+        return instance.countActivePower(countApparentPowerB(meterRecord), meterRecord.getPfb());
+
+    }
+
+    public static float countActivePowerC(MeterRecordDto meterRecord) {
+        return instance.countActivePower(countApparentPowerC(meterRecord), meterRecord.getPfc());
+
+    }
+
+    public static float countActivePowerTotal(MeterRecordDto meterRecord) {
+        return instance.countActivePower(countApparentPowerTotal(meterRecord), countPowerFactorTotal(meterRecord));
+
+    }
+
+    //无功功率
+    public static float countReactivePowerA(MeterRecordDto meterRecord) {
+        return instance.countReactivePower(countReactivePowerA(meterRecord), meterRecord.getPfa());
+
+    }
+
+    public static float countReactivePowerB(MeterRecordDto meterRecord) {
+        return instance.countReactivePower(countReactivePowerB(meterRecord), meterRecord.getPfb());
+
+    }
+
+    public static float countReactivePowerC(MeterRecordDto meterRecord) {
+        return instance.countReactivePower(countReactivePowerC(meterRecord), meterRecord.getPfc());
+
+    }
+
+
+    public static float countReactivePowerTotal(MeterRecordDto meterRecord) {
+        return instance.countReactivePower(instance.countApparentPowerTotal(meterRecord), countPowerFactorTotal(meterRecord));
+    }
+
+    //暂时性方法
+    public static float countReactivePowerTotalTest(MeterRecordDto meterRecord) {
+        return instance.countReactivePower(instance.countApparentPowerTotal(meterRecord), meterRecord.getActivePower() / instance.countApparentPowerTotal(meterRecord));
+    }
+
+
+    /**
+     * @param meterRecord
+     * @return 电流三相不平衡度
+     */
+    public static float countCurrentThreePhaseUnbalanced(MeterRecordDto meterRecord) {
+        return instance.countThreePhaseUnbalanced(instance.maxOfThreeNums(meterRecord.getIa(), meterRecord.getIb(), meterRecord.getIc())
+                , instance.averageOfThreeNums(meterRecord.getIa(), meterRecord.getIb(), meterRecord.getIc()));
+
+    }
+
+    /**
+     * @param meterRecord
+     * @return 电压三相不平衡度
+     */
+    public static float countVoltageThreePhaseUnbalanced(MeterRecordDto meterRecord) {
+        return instance.countThreePhaseUnbalanced(instance.maxOfThreeNums(meterRecord.getUa(), meterRecord.getUb(), meterRecord.getUc())
+                , instance.averageOfThreeNums(meterRecord.getUa(), meterRecord.getUb(), meterRecord.getUc()));
+
+    }
 
 }

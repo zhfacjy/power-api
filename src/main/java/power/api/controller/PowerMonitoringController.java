@@ -113,6 +113,7 @@ public class PowerMonitoringController {
 
         String dateFormat = null;
         String sqlDateFormat = null;
+        // 指定sql中日期的类型
         if (type.equals("day")) {
             dateFormat = DateFormatUtil.DAY_FORMAT;
             sqlDateFormat = DateFormatUtil.DAY_FORMAT_SQL;
