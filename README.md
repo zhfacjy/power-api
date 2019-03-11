@@ -23,8 +23,6 @@ Mysql版本：5.7
   - 本地环境配置修改：`resources`文件夹下的`application-pord.yml`文件
   - 修改字段为`spring.datasource.druid.url`
 - 注意同时修改power-mqtt项目中的数据库配置，相同位置
-- 注意同时修改power-mqtt项目中的数据库配置，相同位置
-- 注意同时修改power-mqtt项目中的数据库配置，相同位置
 
 ## 步骤
 1. 将项目打包成Jar包
